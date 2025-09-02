@@ -1,0 +1,22 @@
+style:
+  MagicNumber:
+    ignoreNumbers: ['-1', '0', '1', '2', '32000']
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreEnums: true
+  
+performance:
+  SpreadOperator:
+    excludes: ['**/test/**']
+
+complexity:
+  ComplexMethod:
+    threshold: 15
+  LongMethod:
+    threshold: 60
+  
+naming:
+  FunctionNaming:
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+    excludeClassPattern: '$^'
