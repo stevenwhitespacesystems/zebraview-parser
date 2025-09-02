@@ -16,8 +16,8 @@ package com.whitespacesystems.parser.lexer
  * - String data (for FD command)
  * - Commas separating parameters
  *
- * TODO: Add support for dynamic character changes via CC, CT, CD commands
  * Performance optimized for high-throughput parsing.
+ * Supports dynamic character changes via CC, CT, CD commands.
  */
 class Lexer(private val input: String) {
     private var position = 0
@@ -32,20 +32,33 @@ class Lexer(private val input: String) {
     private var delimiterChar: Char = ',' // Parameter delimiter (changed by ^CD)
 
     // Performance optimization: Command lookup for O(1) recognition
-    private val commandInfo = hashMapOf(
-        "XA" to CommandInfo(2, false), // Start format
-        "XZ" to CommandInfo(2, false), // End format
-        "FO" to CommandInfo(2, false), // Field origin
-        "FD" to CommandInfo(2, true), // Field data - has string data
-        "FX" to CommandInfo(2, true), // Comment - has string data
-        "CF" to CommandInfo(2, false, true), // Change font - has variants (CFA, CFB)
-        "GB" to CommandInfo(2, false), // Graphic box
-        "FR" to CommandInfo(2, false), // Field reverse
-        "FS" to CommandInfo(2, false), // Field separator
-        "BY" to CommandInfo(2, false), // Barcode default
-        "BC" to CommandInfo(2, false, true), // Code 128 - has variants (BCN, BCR)
-        "A" to CommandInfo(1, false, true) // Font command - has variants (A0N, ABR)
-    )
+    private val commandInfo =
+        hashMapOf(
+            // Start format
+            "XA" to CommandInfo(2, false),
+            // End format
+            "XZ" to CommandInfo(2, false),
+            // Field origin
+            "FO" to CommandInfo(2, false),
+            // Field data - has string data
+            "FD" to CommandInfo(2, true),
+            // Comment - has string data
+            "FX" to CommandInfo(2, true),
+            // Change font - has variants (CFA, CFB)
+            "CF" to CommandInfo(2, false, true),
+            // Graphic box
+            "GB" to CommandInfo(2, false),
+            // Field reverse
+            "FR" to CommandInfo(2, false),
+            // Field separator
+            "FS" to CommandInfo(2, false),
+            // Barcode default
+            "BY" to CommandInfo(2, false),
+            // Code 128 - has variants (BCN, BCR)
+            "BC" to CommandInfo(2, false, true),
+            // Font command - has variants (A0N, ABR)
+            "A" to CommandInfo(1, false, true),
+        )
 
     /**
      * Command information for efficient lookup
@@ -53,7 +66,7 @@ class Lexer(private val input: String) {
     private data class CommandInfo(
         val minLength: Int,
         val hasStringData: Boolean,
-        val hasVariants: Boolean = false
+        val hasVariants: Boolean = false,
     )
 
     private val current: Char
@@ -153,57 +166,18 @@ class Lexer(private val input: String) {
     ): Token {
         val value = StringBuilder()
 
-        // Read exactly 2 letters for most commands (FO, FD, XA, etc.)
-        // Or 1 letter for single-char commands (A)
-        var lettersRead = 0
-        while (current.isLetter() && lettersRead < 2) {
-            value.append(current)
-            advance()
-            lettersRead++
+        // Read base command (usually 2 letters)
+        CommandRecognitionUtils.readBaseCommand(value, { current }, { advance() }, ::isCompleteCommand)
+        val baseCommandName = value.toString()
 
-            // Check if we have a complete command that we recognize
-            val commandSoFar = value.toString()
-            if (isCompleteCommand(commandSoFar)) {
-                break
-            }
-        }
-
-        val commandName = value.toString()
-
-        // Some commands have single character/digit variants (like A0N for font, CFB, BCR)
-        // But only for specific commands, not for FD
-        if (commandName == "A" && (current.isDigit() || current.isLetter())) {
-            // For A command, read up to 2 more characters for font identifier and orientation
-            var extraChars = 0
-            while ((current.isDigit() || current.isLetter()) && extraChars < 2) {
-                value.append(current)
-                advance()
-                extraChars++
-                // Stop if we hit whitespace or comma (parameter separator)
-                if (current.isWhitespace() || current == ',') {
-                    break
-                }
-            }
-        } else if (commandName == "CF" && (current.isDigit() || current.isLetter())) {
-            // For CF command, read 1 more character for font identifier (CFB, CF0)
-            value.append(current)
-            advance()
-        } else if (commandName == "BC" && current.isLetter()) {
-            // For BC command, read 1 more character for orientation (BCN, BCR)
-            value.append(current)
-            advance()
-        }
+        // Read variant characters if supported by this command
+        CommandRecognitionUtils.readCommandVariants(baseCommandName, value, { current }, { advance() })
 
         val finalCommandName = value.toString()
         lastCommand = finalCommandName
 
-        // Set flag if we just read FD command - next non-whitespace token should be field data
-        expectingFieldData = (finalCommandName == "FD") || (finalCommandName == "FX")
-
-        // Clear field data expectation if we encounter FS command (field separator)
-        if (finalCommandName == "FS") {
-            expectingFieldData = false
-        }
+        // Update field data expectation based on command
+        expectingFieldData = CommandRecognitionUtils.updateFieldDataExpectation(finalCommandName, expectingFieldData)
 
         return Token(TokenType.COMMAND, finalCommandName, start, startLine, startColumn)
     }

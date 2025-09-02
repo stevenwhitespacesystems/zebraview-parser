@@ -1,7 +1,10 @@
 package com.whitespacesystems.parser
 
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.math.abs
 
@@ -41,9 +44,12 @@ data class PerformanceBaseline(
  */
 @Serializable
 data class PerformanceThresholds(
-    val simpleCommandsMaxNs: Long = 100_000L, // 0.1ms
-    val complexCommandsMaxNs: Long = 1_000_000L, // 1ms
-    val regressionThreshold: Double = 0.10, // 10%
+    // 0.1ms
+    val simpleCommandsMaxNs: Long = 100_000L,
+    // 1ms
+    val complexCommandsMaxNs: Long = 1_000_000L,
+    // 10%
+    val regressionThreshold: Double = 0.10,
     val description: String = "Performance thresholds for ZPL parser",
 )
 
@@ -73,7 +79,8 @@ data class ComparisonResult(
     val benchmarkName: String,
     val baselineResult: BenchmarkResult?,
     val currentResult: BenchmarkResult,
-    val performanceDelta: Double, // Percentage change
+    // Percentage change
+    val performanceDelta: Double,
     val isRegression: Boolean,
     val regressionSeverity: RegressionSeverity,
 )
@@ -93,6 +100,21 @@ enum class RegressionSeverity {
  * Baseline comparison and regression detection utility.
  */
 object BaselineComparison {
+    // Performance analysis constants
+    private object AnalysisConstants {
+        const val REGRESSION_MINOR_THRESHOLD = 5.0
+        const val REGRESSION_MODERATE_THRESHOLD = 10.0
+        const val REGRESSION_SEVERE_THRESHOLD = 25.0
+        const val REGRESSION_CRITICAL_THRESHOLD = 50.0
+
+        const val TIME_FORMAT_NS_TO_US = 1_000.0
+        const val TIME_FORMAT_NS_TO_MS = 1_000_000.0
+        const val TIME_FORMAT_NS_TO_S = 1_000_000_000.0
+
+        const val PERCENTAGE_CONVERSION = 100.0
+        const val IMPROVEMENT_THRESHOLD = -5.0
+    }
+
     private val json =
         Json {
             prettyPrint = true
@@ -112,8 +134,14 @@ object BaselineComparison {
             } else {
                 null
             }
-        } catch (e: Exception) {
-            println("Warning: Failed to load baseline: ${e.message}")
+        } catch (e: SerializationException) {
+            println("Warning: Failed to load baseline due to serialization error: ${e.message}")
+            null
+        } catch (e: SecurityException) {
+            println("Warning: Failed to load baseline due to security error: ${e.message}")
+            null
+        } catch (e: java.io.IOException) {
+            println("Warning: Failed to load baseline due to IO error: ${e.message}")
             null
         }
     }
@@ -126,8 +154,12 @@ object BaselineComparison {
             baselineFile.parentFile.mkdirs()
             val jsonText = json.encodeToString(baseline)
             baselineFile.writeText(jsonText)
-        } catch (e: Exception) {
-            println("Warning: Failed to save baseline: ${e.message}")
+        } catch (e: SerializationException) {
+            println("Warning: Failed to save baseline due to serialization error: ${e.message}")
+        } catch (e: SecurityException) {
+            println("Warning: Failed to save baseline due to security error: ${e.message}")
+        } catch (e: java.io.IOException) {
+            println("Warning: Failed to save baseline due to IO error: ${e.message}")
         }
     }
 
@@ -144,7 +176,8 @@ object BaselineComparison {
             when {
                 name.contains("Command") -> commandBenchmarks[name] = result
                 name.contains("Label") || name.contains("E2E") -> e2eBenchmarks[name] = result
-                name.contains("Memory") || name.contains("Allocation") || name.contains("Gc") -> memoryBenchmarks[name] = result
+                name.contains("Memory") || name.contains("Allocation") ||
+                    name.contains("Gc") -> memoryBenchmarks[name] = result
             }
         }
 
@@ -190,12 +223,12 @@ object BaselineComparison {
     ): ComparisonResult {
         val performanceDelta =
             if (baseline != null) {
-                ((current.averageTimeNs - baseline.averageTimeNs) / baseline.averageTimeNs) * 100.0
+                ((current.averageTimeNs - baseline.averageTimeNs) / baseline.averageTimeNs) * AnalysisConstants.PERCENTAGE_CONVERSION
             } else {
                 0.0
             }
 
-        val isRegression = performanceDelta > (thresholds.regressionThreshold * 100.0)
+        val isRegression = performanceDelta > (thresholds.regressionThreshold * AnalysisConstants.PERCENTAGE_CONVERSION)
         val severity = calculateRegressionSeverity(performanceDelta)
 
         return ComparisonResult(
@@ -214,10 +247,10 @@ object BaselineComparison {
     private fun calculateRegressionSeverity(performanceDelta: Double): RegressionSeverity {
         val absDelta = abs(performanceDelta)
         return when {
-            absDelta < 5.0 -> RegressionSeverity.NONE
-            absDelta < 10.0 -> RegressionSeverity.MINOR
-            absDelta < 25.0 -> RegressionSeverity.MODERATE
-            absDelta < 50.0 -> RegressionSeverity.SEVERE
+            absDelta < AnalysisConstants.REGRESSION_MINOR_THRESHOLD -> RegressionSeverity.NONE
+            absDelta < AnalysisConstants.REGRESSION_MODERATE_THRESHOLD -> RegressionSeverity.MINOR
+            absDelta < AnalysisConstants.REGRESSION_SEVERE_THRESHOLD -> RegressionSeverity.MODERATE
+            absDelta < AnalysisConstants.REGRESSION_CRITICAL_THRESHOLD -> RegressionSeverity.SEVERE
             else -> RegressionSeverity.CRITICAL
         }
     }
@@ -250,7 +283,7 @@ object BaselineComparison {
                     }
 
                 report.appendLine("$severity: ${regression.benchmarkName}")
-                report.appendLine("  Performance change: ${String.format("%.1f", regression.performanceDelta)}%")
+                report.appendLine("  Performance change: ${"%.1f".format(regression.performanceDelta)}%")
 
                 if (regression.baselineResult != null) {
                     report.appendLine("  Baseline: ${formatTime(regression.baselineResult.averageTimeNs)}")
@@ -265,7 +298,7 @@ object BaselineComparison {
         report.appendLine("Total benchmarks: ${comparisons.size}")
         report.appendLine("Regressions found: ${regressions.size}")
 
-        val improvements = comparisons.filter { it.performanceDelta < -5.0 }
+        val improvements = comparisons.filter { it.performanceDelta < AnalysisConstants.IMPROVEMENT_THRESHOLD }
         if (improvements.isNotEmpty()) {
             report.appendLine("Performance improvements: ${improvements.size}")
         }
@@ -300,7 +333,8 @@ object BaselineComparison {
             when {
                 name.contains("Command") -> updatedCommandBenchmarks[name] = result
                 name.contains("Label") || name.contains("E2E") -> updatedE2eBenchmarks[name] = result
-                name.contains("Memory") || name.contains("Allocation") || name.contains("Gc") -> updatedMemoryBenchmarks[name] = result
+                name.contains("Memory") || name.contains("Allocation") ||
+                    name.contains("Gc") -> updatedMemoryBenchmarks[name] = result
             }
         }
 
@@ -343,10 +377,14 @@ object BaselineComparison {
      */
     private fun formatTime(nanoseconds: Double): String {
         return when {
-            nanoseconds < 1_000 -> "${String.format("%.0f", nanoseconds)}ns"
-            nanoseconds < 1_000_000 -> "${String.format("%.1f", nanoseconds / 1_000)}μs"
-            nanoseconds < 1_000_000_000 -> "${String.format("%.2f", nanoseconds / 1_000_000)}ms"
-            else -> "${String.format("%.3f", nanoseconds / 1_000_000_000)}s"
+            nanoseconds < AnalysisConstants.TIME_FORMAT_NS_TO_US -> "${"%.0f".format(nanoseconds)}ns"
+            nanoseconds < AnalysisConstants.TIME_FORMAT_NS_TO_MS -> "${"%.1f".format(
+                nanoseconds / AnalysisConstants.TIME_FORMAT_NS_TO_US,
+            )}μs"
+            nanoseconds < AnalysisConstants.TIME_FORMAT_NS_TO_S -> "${"%.2f".format(
+                nanoseconds / AnalysisConstants.TIME_FORMAT_NS_TO_MS,
+            )}ms"
+            else -> "${"%.3f".format(nanoseconds / AnalysisConstants.TIME_FORMAT_NS_TO_S)}s"
         }
     }
 }

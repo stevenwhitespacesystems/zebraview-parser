@@ -9,6 +9,7 @@ Template optimized for AI agents to implement features with sufficient context a
 3. **Information Dense**: Use keywords and patterns from the codebase
 4. **Progressive Success**: Start simple, validate, then enhance
 5. **Global Rules**: Be sure to follow all rules in CLAUDE.md
+6. **STRICT QUALITY GATES**: ALL linting and static analysis must pass - no feature is complete until all checks pass (NO EXCEPTIONS)
 
 ## 🚨 CRITICAL: ALWAYS Include Complete Foundation Section
 **When creating a PRP, you MUST copy the entire "FOUNDATION REFERENCE" section from this template into your PRP. Do NOT leave it blank or summarize it. The Foundation section contains essential architecture patterns, performance optimization guidelines, Kotest testing patterns, and Kotlin coding standards that are critical for proper ZPL parser implementation.**

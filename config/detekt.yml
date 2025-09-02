@@ -11,7 +11,7 @@ performance:
     excludes: ['**/test/**']
 
 complexity:
-  ComplexMethod:
+  CyclomaticComplexMethod:
     threshold: 15
   LongMethod:
     threshold: 60

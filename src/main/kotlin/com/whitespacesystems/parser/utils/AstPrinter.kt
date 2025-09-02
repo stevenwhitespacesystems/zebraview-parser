@@ -36,27 +36,27 @@ class AstPrinter : ZplNodeVisitor<String> {
     }
 
     override fun visitFieldOriginCommand(command: FieldOriginCommand): String {
-        return "FieldOriginCommand(x=${command.x}, y=${command.y})"
+        return "FieldOriginCommand(${AstPrinterUtils.formatCoordinatePair(command.x, command.y)})"
     }
 
     override fun visitFieldDataCommand(command: FieldDataCommand): String {
-        val escapedData = command.data.replace("\"", "\\\"")
+        val escapedData = AstPrinterUtils.escapeStringData(command.data)
         return "FieldDataCommand(data=\"$escapedData\")"
     }
 
     override fun visitFontCommand(command: FontCommand): String {
         val params =
-            mutableListOf<String>().apply {
-                add("font='${command.font}'")
-                command.orientation?.let { add("orientation='$it'") }
-                command.height?.let { add("height=$it") }
-                command.width?.let { add("width=$it") }
-            }
-        return "FontCommand(${params.joinToString(", ")})"
+            listOf(
+                "font='${command.font}'",
+                command.orientation?.let { "orientation='$it'" },
+                command.height?.let { "height=$it" },
+                command.width?.let { "width=$it" },
+            )
+        return AstPrinterUtils.formatOptionalParameters("FontCommand", params)
     }
 
     override fun visitCommentCommand(command: CommentCommand): String {
-        val escapedText = command.text.replace("\"", "\\\"")
+        val escapedText = AstPrinterUtils.escapeStringData(command.text)
         return "CommentCommand(text=\"$escapedText\")"
     }
 
@@ -78,7 +78,8 @@ class AstPrinter : ZplNodeVisitor<String> {
     }
 
     override fun visitBarCodeDefaultCommand(command: BarCodeDefaultCommand): String {
-        return "BarCodeDefaultCommand(moduleWidth=${command.moduleWidth}, widthRatio=${command.widthRatio}, height=${command.height})"
+        return "BarCodeDefaultCommand(moduleWidth=${command.moduleWidth}, " +
+            "widthRatio=${command.widthRatio}, height=${command.height})"
     }
 
     override fun visitCode128Command(command: Code128Command): String {

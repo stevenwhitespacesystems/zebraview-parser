@@ -367,11 +367,12 @@ baseline.json                            # Performance baseline data (root level
 - **Packages**: lowercase (`lexer`, `parser`, `ast`, `utils`)
 
 ### Code Limits & Quality
-- **Files**: Max 300 lines (parser components may exceed for grammar completeness)
-- **Functions**: Max 30 lines (parsing functions may be longer for readability)
-- **Classes**: Max 200 lines
-- **Line length**: Max 120 characters
-- **Cyclomatic complexity**: Max 10 per function
+- **Files**: Max 300 lines (NO EXCEPTIONS)
+- **Functions**: Max 30 lines (NO EXCEPTIONS)
+- **Classes**: Max 200 lines (NO EXCEPTIONS)
+- **Line length**: Max 120 characters (NO EXCEPTIONS)
+- **Cyclomatic complexity**: Max 10 per function (NO EXCEPTIONS)
+- **ALL linting and static analysis must pass - no feature is complete until all checks pass**
 
 ### Documentation
 - **Public APIs**: KDoc comments for all public classes and functions

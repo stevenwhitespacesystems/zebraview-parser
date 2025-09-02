@@ -12,6 +12,13 @@ package com.whitespacesystems.parser.ast
  * @param color Line color ('B' for black, 'W' for white)
  * @param rounding Degree of corner rounding (0 for no rounding to 8 for heaviest rounding)
  */
+private object GraphicBoxLimits {
+    const val MIN_THICKNESS = 1
+    const val MAX_SIZE = 32000
+    const val MIN_ROUNDING = 0
+    const val MAX_ROUNDING = 8
+}
+
 data class GraphicBoxCommand(
     val width: Int = 1,
     val height: Int = 1,
@@ -20,20 +27,22 @@ data class GraphicBoxCommand(
     val rounding: Int = 0,
 ) : ZplNode() {
     init {
-        require(thickness in 1..32000) {
-            "Thickness must be between 1 and 32000, got: $thickness"
+        require(thickness in GraphicBoxLimits.MIN_THICKNESS..GraphicBoxLimits.MAX_SIZE) {
+            "Thickness must be between ${GraphicBoxLimits.MIN_THICKNESS} and " +
+                "${GraphicBoxLimits.MAX_SIZE}, got: $thickness"
         }
-        require(width >= thickness && width <= 32000) {
-            "Width must be between $thickness and 32000, got: $width"
+        require(width >= thickness && width <= GraphicBoxLimits.MAX_SIZE) {
+            "Width must be between $thickness and ${GraphicBoxLimits.MAX_SIZE}, got: $width"
         }
-        require(height >= thickness && height <= 32000) {
-            "Height must be between $thickness and 32000, got: $height"
+        require(height >= thickness && height <= GraphicBoxLimits.MAX_SIZE) {
+            "Height must be between $thickness and ${GraphicBoxLimits.MAX_SIZE}, got: $height"
         }
         require(color == 'B' || color == 'W') {
             "Color must be 'B' (black) or 'W' (white), got: $color"
         }
-        require(rounding in 0..8) {
-            "Rounding must be between 0 and 8, got: $rounding"
+        require(rounding in GraphicBoxLimits.MIN_ROUNDING..GraphicBoxLimits.MAX_ROUNDING) {
+            "Rounding must be between ${GraphicBoxLimits.MIN_ROUNDING} and " +
+                "${GraphicBoxLimits.MAX_ROUNDING}, got: $rounding"
         }
     }
 

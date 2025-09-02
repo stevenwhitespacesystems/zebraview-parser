@@ -5,6 +5,23 @@ package com.whitespacesystems.parser.data
  * Provides consistent, realistic ZPL inputs for performance measurement.
  */
 object BenchmarkData {
+    // Label generation constants
+    private object LabelConstants {
+        const val INVENTORY_ITEM_COUNT = 15
+        const val INVENTORY_START_Y = 60
+        const val INVENTORY_LINE_HEIGHT = 25
+        const val INVENTORY_BASE_SKU = 1000
+        const val INVENTORY_QTY_MULTIPLIER = 10
+        const val INVENTORY_PRICE_MULTIPLIER = 5
+
+        const val REPEATED_FIELD_COUNT = 20
+        const val REPEATED_FIELD_GRID_COLUMNS = 4
+        const val REPEATED_FIELD_COLUMN_WIDTH = 100
+        const val REPEATED_FIELD_ROW_HEIGHT = 30
+        const val REPEATED_FIELD_BASE_X = 50
+        const val REPEATED_FIELD_BASE_Y = 50
+    }
+
     /**
      * Simple individual ZPL commands for basic performance measurement.
      * Each command represents a single parsing operation.
@@ -12,20 +29,31 @@ object BenchmarkData {
     val SIMPLE_COMMANDS =
         listOf(
             // Format control commands (simple, should be <0.1ms)
-            "^XA", // Start Format
-            "^XZ", // End Format
+            // Start Format
+            "^XA",
+            // End Format
+            "^XZ",
             // Field positioning commands (complex, should be <1ms)
-            "^FO100,50", // Field Origin with coordinates
-            "^FO0,0", // Field Origin at origin
-            "^FO999,999", // Field Origin with large coordinates
+            // Field Origin with coordinates
+            "^FO100,50",
+            // Field Origin at origin
+            "^FO0,0",
+            // Field Origin with large coordinates
+            "^FO999,999",
             // Field data commands (complex, should be <1ms)
-            "^FDHello World", // Field Data with simple text
-            "^FD", // Field Data empty
-            "^FDPrice: $29.99", // Field Data with special characters
+            // Field Data with simple text
+            "^FDHello World",
+            // Field Data empty
+            "^FD",
+            // Field Data with special characters
+            "^FDPrice: $29.99",
             // Font commands (complex, should be <1ms)
-            "^A0N,30,30", // Font with all parameters
-            "^A0N", // Font with minimal parameters
-            "^ABN,25,25", // Font with different type
+            // Font with all parameters
+            "^A0N,30,30",
+            // Font with minimal parameters
+            "^A0N",
+            // Font with different type
+            "^ABN,25,25",
         )
 
     /**
@@ -128,16 +156,16 @@ object BenchmarkData {
         // Add title
         sb.append("^FO50,20^A0N,30^FDInventory Report")
 
-        // Add 15 inventory items
-        repeat(15) { i ->
-            val y = 60 + (i * 25)
-            sb.append("^FO50,$y^A0N,16^FDItem ${i + 1}: SKU-${1000 + i}")
-            sb.append("^FO300,$y^A0N,16^FDQty: ${(i + 1) * 10}")
-            sb.append("^FO400,$y^A0N,16^FD$${(i + 1) * 5}.99")
+        // Add inventory items
+        repeat(LabelConstants.INVENTORY_ITEM_COUNT) { i ->
+            val y = LabelConstants.INVENTORY_START_Y + (i * LabelConstants.INVENTORY_LINE_HEIGHT)
+            sb.append("^FO50,$y^A0N,16^FDItem ${i + 1}: SKU-${LabelConstants.INVENTORY_BASE_SKU + i}")
+            sb.append("^FO300,$y^A0N,16^FDQty: ${(i + 1) * LabelConstants.INVENTORY_QTY_MULTIPLIER}")
+            sb.append("^FO400,$y^A0N,16^FD$${(i + 1) * LabelConstants.INVENTORY_PRICE_MULTIPLIER}.99")
         }
 
         // Add footer
-        sb.append("^FO50,450^A0N,20^FDTotal Items: 15")
+        sb.append("^FO50,450^A0N,20^FDTotal Items: ${LabelConstants.INVENTORY_ITEM_COUNT}")
         sb.append("^XZ")
 
         return sb.toString()
@@ -149,9 +177,11 @@ object BenchmarkData {
     private fun generateRepeatedFieldsLabel(): String {
         val sb = StringBuilder("^XA")
 
-        repeat(20) { i ->
-            val x = 50 + (i % 4) * 100
-            val y = 50 + (i / 4) * 30
+        repeat(LabelConstants.REPEATED_FIELD_COUNT) { i ->
+            val xOffset = (i % LabelConstants.REPEATED_FIELD_GRID_COLUMNS) * LabelConstants.REPEATED_FIELD_COLUMN_WIDTH
+            val x = LabelConstants.REPEATED_FIELD_BASE_X + xOffset
+            val yOffset = (i / LabelConstants.REPEATED_FIELD_GRID_COLUMNS) * LabelConstants.REPEATED_FIELD_ROW_HEIGHT
+            val y = LabelConstants.REPEATED_FIELD_BASE_Y + yOffset
             sb.append("^FO$x,$y^A0N,18^FDField$i")
         }
 

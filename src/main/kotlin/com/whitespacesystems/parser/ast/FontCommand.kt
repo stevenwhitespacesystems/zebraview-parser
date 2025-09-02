@@ -11,6 +11,11 @@ package com.whitespacesystems.parser.ast
  * @param height Character height in dots - optional
  * @param width Width in dots - optional
  */
+private object FontLimits {
+    const val MIN_FONT_SIZE = 10
+    const val MAX_FONT_SIZE = 32000
+}
+
 data class FontCommand(
     val font: Char = 'A',
     val orientation: Char? = null,
@@ -25,10 +30,14 @@ data class FontCommand(
             }
         }
         height?.let {
-            require(it in 10..32000) { "Height must be between 10 and 32000, got: $it" }
+            require(
+                it in FontLimits.MIN_FONT_SIZE..FontLimits.MAX_FONT_SIZE,
+            ) { "Height must be between ${FontLimits.MIN_FONT_SIZE} and ${FontLimits.MAX_FONT_SIZE}, got: $it" }
         }
         width?.let {
-            require(it in 10..32000) { "Width must be between 10 and 32000, got: $it" }
+            require(
+                it in FontLimits.MIN_FONT_SIZE..FontLimits.MAX_FONT_SIZE,
+            ) { "Width must be between ${FontLimits.MIN_FONT_SIZE} and ${FontLimits.MAX_FONT_SIZE}, got: $it" }
         }
     }
 
