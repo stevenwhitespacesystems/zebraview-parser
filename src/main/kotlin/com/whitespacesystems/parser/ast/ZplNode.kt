@@ -27,5 +27,19 @@ interface ZplNodeVisitor<T> {
 
     fun visitFontCommand(command: FontCommand): T
 
+    fun visitCommentCommand(command: CommentCommand): T
+
+    fun visitFieldReverseCommand(command: FieldReverseCommand): T
+
+    fun visitFieldSeparatorCommand(command: FieldSeparatorCommand): T
+
+    fun visitChangeFontCommand(command: ChangeFontCommand): T
+
+    fun visitGraphicBoxCommand(command: GraphicBoxCommand): T
+
+    fun visitBarCodeDefaultCommand(command: BarCodeDefaultCommand): T
+
+    fun visitCode128Command(command: Code128Command): T
+
     fun visitZplProgram(program: ZplProgram): T
 }

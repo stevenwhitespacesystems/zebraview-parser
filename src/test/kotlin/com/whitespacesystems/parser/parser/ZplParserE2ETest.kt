@@ -1,9 +1,16 @@
 package com.whitespacesystems.parser.parser
 
+import com.whitespacesystems.parser.ast.BarCodeDefaultCommand
+import com.whitespacesystems.parser.ast.ChangeFontCommand
+import com.whitespacesystems.parser.ast.Code128Command
+import com.whitespacesystems.parser.ast.CommentCommand
 import com.whitespacesystems.parser.ast.EndFormatCommand
 import com.whitespacesystems.parser.ast.FieldDataCommand
 import com.whitespacesystems.parser.ast.FieldOriginCommand
+import com.whitespacesystems.parser.ast.FieldReverseCommand
+import com.whitespacesystems.parser.ast.FieldSeparatorCommand
 import com.whitespacesystems.parser.ast.FontCommand
+import com.whitespacesystems.parser.ast.GraphicBoxCommand
 import com.whitespacesystems.parser.ast.StartFormatCommand
 import com.whitespacesystems.parser.lexer.Lexer
 import com.whitespacesystems.parser.utils.AstPrinter
@@ -221,5 +228,132 @@ class ZplParserE2ETest : StringSpec({
         program.commands.size shouldBe 2
         program.commands[0].shouldBeInstanceOf<StartFormatCommand>()
         program.commands[1].shouldBeInstanceOf<EndFormatCommand>()
+    }
+
+    "should parse ZPL with comment and field separator" {
+        val zplCode = "^XA^FXSHIPPING LABEL^FO100,100^FDTest^FS^XZ"
+        val lexer = Lexer(zplCode)
+        val parser = ZplParser(lexer.tokenize())
+        val program = parser.parse()
+
+        program.commands.size shouldBe 6
+
+        program.commands[0].shouldBeInstanceOf<StartFormatCommand>()
+
+        val commentCommand = program.commands[1]
+        commentCommand.shouldBeInstanceOf<CommentCommand>()
+        (commentCommand as CommentCommand).text shouldBe "SHIPPING LABEL"
+
+        program.commands[2].shouldBeInstanceOf<FieldOriginCommand>()
+        program.commands[3].shouldBeInstanceOf<FieldDataCommand>()
+
+        val fsCommand = program.commands[4]
+        fsCommand.shouldBeInstanceOf<FieldSeparatorCommand>()
+
+        program.commands[5].shouldBeInstanceOf<EndFormatCommand>()
+    }
+
+    "should parse ZPL with field reverse and graphic box" {
+        val zplCode = "^XA^FO100,100^GB150,100,5,W,2^FR^FDReversed Text^FS^XZ"
+        val lexer = Lexer(zplCode)
+        val parser = ZplParser(lexer.tokenize())
+        val program = parser.parse()
+
+        program.commands.size shouldBe 7
+
+        val gbCommand = program.commands[2]
+        gbCommand.shouldBeInstanceOf<GraphicBoxCommand>()
+        val gb = gbCommand as GraphicBoxCommand
+        gb.width shouldBe 150
+        gb.height shouldBe 100
+        gb.thickness shouldBe 5
+        gb.color shouldBe 'W'
+        gb.rounding shouldBe 2
+
+        val frCommand = program.commands[3]
+        frCommand.shouldBeInstanceOf<FieldReverseCommand>()
+
+        program.commands[5].shouldBeInstanceOf<FieldSeparatorCommand>()
+    }
+
+    "should parse ZPL with font changes and barcode settings" {
+        val zplCode = "^XA^CFA,30,20^BY3,2.5,100^FO100,50^BCN,150,Y,N,N,A^FDTest123^FS^XZ"
+        val lexer = Lexer(zplCode)
+        val parser = ZplParser(lexer.tokenize())
+        val program = parser.parse()
+
+        program.commands.size shouldBe 8
+
+        val cfCommand = program.commands[1]
+        cfCommand.shouldBeInstanceOf<ChangeFontCommand>()
+        val cf = cfCommand as ChangeFontCommand
+        cf.font shouldBe 'A'
+        cf.height shouldBe 30
+        cf.width shouldBe 20
+
+        val byCommand = program.commands[2]
+        byCommand.shouldBeInstanceOf<BarCodeDefaultCommand>()
+        val by = byCommand as BarCodeDefaultCommand
+        by.moduleWidth shouldBe 3
+        by.widthRatio shouldBe 2.5
+        by.height shouldBe 100
+
+        val bcCommand = program.commands[4]
+        bcCommand.shouldBeInstanceOf<Code128Command>()
+        val bc = bcCommand as Code128Command
+        bc.orientation shouldBe 'N'
+        bc.height shouldBe 150
+        bc.printInterpretation shouldBe true
+        bc.printInterpretationAbove shouldBe false
+        bc.uccCheckDigit shouldBe false
+        bc.mode shouldBe 'A'
+    }
+
+    "should parse complex shipping label with all new commands" {
+        val zplCode =
+            """
+            ^XA
+            ^FXSHIPPING LABEL - Order #12345
+            ^CFA,25,15
+            ^FO50,50^GB400,300,4,B,0^FS
+            ^FO100,100^FR^FDShip To:^FS
+            ^FO100,150^FDJohn Doe^FS
+            ^FO100,200^FD123 Main St^FS
+            ^BY2,2.5,50
+            ^FO100,250^BCN,100,Y,N,N,A^FD1234567890^FS
+            ^XZ
+            """.trimIndent()
+
+        val lexer = Lexer(zplCode)
+        val parser = ZplParser(lexer.tokenize())
+        val program = parser.parse()
+
+        // Should contain all command types
+        val commandTypes = program.commands.map { it::class.simpleName }
+        commandTypes.contains("StartFormatCommand") shouldBe true
+        commandTypes.contains("CommentCommand") shouldBe true
+        commandTypes.contains("ChangeFontCommand") shouldBe true
+        commandTypes.contains("GraphicBoxCommand") shouldBe true
+        commandTypes.contains("FieldReverseCommand") shouldBe true
+        commandTypes.contains("FieldSeparatorCommand") shouldBe true
+        commandTypes.contains("BarCodeDefaultCommand") shouldBe true
+        commandTypes.contains("Code128Command") shouldBe true
+        commandTypes.contains("EndFormatCommand") shouldBe true
+    }
+
+    "should generate readable AST output with new commands" {
+        val zplCode = "^XA^FXTEST^CF0,20^GB100,50,2,B,1^FR^FS^XZ"
+        val lexer = Lexer(zplCode)
+        val parser = ZplParser(lexer.tokenize())
+        val program = parser.parse()
+
+        val printer = AstPrinter()
+        val ast = printer.print(program)
+
+        ast.contains("CommentCommand(text=\"TEST\")") shouldBe true
+        ast.contains("ChangeFontCommand(font='0', height=20, width=5)") shouldBe true
+        ast.contains("GraphicBoxCommand(width=100, height=50, thickness=2, color='B', rounding=1)") shouldBe true
+        ast.contains("FieldReverseCommand()") shouldBe true
+        ast.contains("FieldSeparatorCommand()") shouldBe true
     }
 })
