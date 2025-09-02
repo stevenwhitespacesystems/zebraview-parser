@@ -98,12 +98,13 @@ throw ParseException("Expected coordinate parameter", token.position)
 
 ### Task List (in execution order)
 ```yaml
+# Core Implementation Tasks
 Task 1: CREATE src/main/kotlin/com/whitespacesystems/parser/ast/NewCommand.kt
   - PATTERN: Follow existing AST node structure (FieldOriginCommand.kt)
   - CRITICAL: Extend ZplNode sealed class, implement visitor pattern
   - VERIFY: Proper data class with immutable properties
 
-Task 2: CREATE src/main/kotlin/com/whitespacesystems/parser/parser/ZplParser.kt
+Task 2: UPDATE src/main/kotlin/com/whitespacesystems/parser/parser/ZplParser.kt
   - PATTERN: Add parseNewCommand() method following existing patterns
   - CRITICAL: Handle token consumption, error reporting with positions
   - VERIFY: Integrates with main parse() method
@@ -113,8 +114,108 @@ Task 3: CREATE src/test/kotlin/com/whitespacesystems/parser/parser/NewCommandTes
   - CRITICAL: Test parsing, validation, error cases, AST generation
   - VERIFY: 80%+ coverage, all edge cases covered
 
-Task N: ...
+# Performance Validation Tasks (MANDATORY for new ZPL commands)
+Task N: CREATE src/benchmark/kotlin/.../NewCommandBenchmarks.kt
+  - PATTERN: Follow CommandBenchmarks.kt structure with @State and @Benchmark annotations
+  - CRITICAL: Include both isolated command and E2E benchmarks
+  - VERIFY: Performance <0.1ms simple commands, <1ms complex commands
+  - INCLUDE: Individual command benchmark + complete label benchmark
+
+Task N+1: VALIDATE no performance regression
+  - RUN: ./gradlew benchmark
+  - CHECK: BaselineComparison output for >10% degradation warnings
+  - VERIFY: No regression in existing commands
+  - IF REGRESSION: STOP and create regression fix PRP before completing feature
+
+Task N+2: UPDATE baseline performance data
+  - RUN: BaselineComparison utilities to update baseline.json if performance improved
+  - VERIFY: New performance measurements recorded
+  - DOCUMENT: Any optimization insights discovered
+
+# Final Integration Tasks
+Task FINAL-1: Complete quality gates including performance
+  - RUN: ./gradlew check (includes ktlint, detekt, tests)
+  - RUN: ./gradlew benchmark (performance validation)
+  - VERIFY: All quality gates pass
+
+Task FINAL: Integration verification
+  - RUN: ./gradlew run (test demo application)
+  - VERIFY: New command works in complete parsing workflows
 ```
+
+## Performance Regression Handling Workflow
+
+### When Performance Regression Detected (>10% degradation)
+
+If `./gradlew benchmark` shows ANY command has degraded >10%:
+
+1. **STOP current PRP completion** - Do not mark the feature complete
+2. **Document regression details** in current PRP completion notes:
+   ```
+   🔍 PERFORMANCE REGRESSION DETECTED:
+   - Affected command(s): [command name(s)]  
+   - Performance change: [baseline] → [current] ([X%] slower)
+   - Likely cause: [recent implementation changes]
+   - BaselineComparison output: [paste warning messages]
+   
+   ⚠️ Current PRP cannot be completed until regression is resolved.
+   ```
+
+3. **Create INITIAL.md for regression fix**:
+   ```markdown
+   # PERFORMANCE REGRESSION DETECTED
+
+   ## Commands Affected
+   [List specific commands with >10% degradation and performance deltas]
+
+   ## Performance Impact Analysis
+   - [Command 1]: [baseline] → [current] ([X%] degradation)
+   - [Command 2]: [baseline] → [current] ([Y%] degradation)
+   
+   ## Root Cause Investigation Required
+   - Analyze recent implementation changes that may have introduced inefficiencies
+   - Profile hot paths for object allocations or algorithmic complexity increases
+   - Review parsing logic for unnecessary string operations or repeated calculations
+   
+   ## Requirements
+   - Investigate root cause of performance regression
+   - Implement performance optimization fixes
+   - Validate fixes restore performance to within 5% of baseline
+   - Update benchmarks and baseline.json with verified measurements
+   - Ensure no other commands regress during optimization
+   ```
+
+4. **Execute regression fix using standard PRP workflow**:
+   - Run `/prep-prp` on the populated INITIAL.md
+   - Generate PRP using `/generate-prp` with regression focus
+   - Execute regression fix PRP BEFORE completing original feature PRP
+   - Original feature remains incomplete until performance is restored
+
+5. **Verify regression resolution and complete original PRP**:
+   ```bash
+   ./gradlew benchmark
+   # Confirm no >10% degradation warnings
+   # Confirm affected commands within acceptable thresholds
+   # Complete original PRP with performance validation passed
+   ```
+
+### Regression Fix PRP Integration
+
+The regression fix workflow integrates seamlessly with existing PRP tools:
+- **INITIAL.md**: Contains regression context and requirements
+- **`/prep-prp`**: Processes regression details into structured PRP
+- **`/generate-prp`**: Creates focused performance optimization plan
+- **Standard PRP execution**: Follows same quality gates and validation
+
+### Regression Fix PRP Requirements
+
+All regression fix PRPs must include:
+- Root cause analysis of what caused the degradation
+- Specific optimization strategies (avoid allocations, optimize hot paths, etc.)
+- Before/after performance measurements with `./gradlew benchmark`
+- Verification that the fix doesn't cause other regressions
+- Update to baseline.json with new verified measurements
+- Integration testing with `./gradlew run` demo application
 
 ---
 
@@ -136,6 +237,14 @@ Task N: ...
 - **Minimize regex usage** - use character-by-character parsing for speed
 - **Profile regularly** - measure parsing performance on large ZPL files
 - **Cache frequently accessed data** - command mappings, token types
+
+### Performance Benchmarking Requirements
+- **Benchmark Coverage**: All new ZPL commands must have performance benchmarks
+- **Performance Thresholds**: Simple commands <0.1ms, complex commands <1ms
+- **Memory Efficiency**: Minimize object allocation per parsing operation
+- **Regression Detection**: >10% performance degradation triggers warnings
+- **Benchmark Integration**: Use kotlinx-benchmark for JVM performance measurement
+- **Validation Gates**: Include `./gradlew benchmark` in quality checks when applicable
 
 ## 🏗️ ZPL Parser Architecture
 
@@ -204,6 +313,9 @@ class NewFeatureTest : StringSpec({
 ./gradlew ktlintFormat             # Auto-fix code formatting
 ./gradlew detekt                   # Run static analysis
 ./gradlew jacocoTestReport         # Generate coverage report
+./gradlew check                    # Run ALL verification tasks (recommended)
+./gradlew benchmark                # Run performance benchmarks (when applicable)
+./gradlew benchmarkQuick           # Quick benchmark profile (when applicable)
 ```
 
 ## 📋 Kotlin Standards & Patterns
@@ -258,6 +370,10 @@ throw ParseException(
 
 ### Quality Checks (Run in Order)
 ```bash
+# RECOMMENDED: Single command runs all verification tasks
+./gradlew check                      # Runs ktlint, detekt, tests, coverage - ALL quality gates
+
+# OR: Manual step-by-step approach
 # 1. Code Style & Analysis - Fix ALL errors before proceeding
 ./gradlew ktlintFormat               # Auto-fix code formatting
 ./gradlew detekt                     # Run static analysis
@@ -267,7 +383,11 @@ throw ParseException(
 ./gradlew test                       # Run all tests
 ./gradlew jacocoTestReport           # Generate coverage report
 
-# 3. Build Verification
+# 3. Performance Validation (when applicable)
+./gradlew benchmark                  # Comprehensive performance benchmarks
+./gradlew benchmarkQuick            # Quick benchmark profile for faster feedback
+
+# 4. Build Verification
 ./gradlew build                      # Full build verification
 ./gradlew run                        # Test demo application
 ```
@@ -354,6 +474,51 @@ class NewFeatureE2ETest : StringSpec({
 })
 ```
 
+### Performance Benchmark Testing Pattern
+```kotlin
+@State(Scope.Benchmark)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+open class NewCommandBenchmarks {
+
+    @Benchmark
+    fun benchmarkNewCommand(): ZplProgram {
+        val lexer = Lexer("^NewCommand100,200")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkNewCommandInCompleteLabel(): ZplProgram {
+        val lexer = Lexer("^XA^FO100,50^NewCommand200,300^FDTest^XZ")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+}
+```
+
+### Benchmark Validation Testing Pattern
+```kotlin
+class BenchmarkSystemTest : StringSpec({
+
+    "should execute benchmarks within performance thresholds" {
+        val benchmarkResult = runBenchmark(NewCommandBenchmarks::class)
+        benchmarkResult.results shouldNotBeEmpty()
+        benchmarkResult.results.forEach { (command, result) ->
+            result.averageTimeNs shouldBeLessThan 1_000_000 // < 1ms threshold
+        }
+    }
+
+    "should detect performance regression" {
+        val currentResults = runBenchmark(NewCommandBenchmarks::class)
+        val baseline = loadBaseline()
+        val comparison = BaselineComparison.compare(currentResults, baseline)
+        
+        if (comparison.hasRegression) {
+            println("PERFORMANCE WARNING: ${comparison.regressionDetails}")
+        }
+    }
+})
+```
+
 ## ZPL Parser Guidelines
 
 ### ✅ Required Patterns
@@ -364,6 +529,9 @@ class NewFeatureE2ETest : StringSpec({
 - Include position information in all ParseExceptions
 - Use context-aware lexing for field data vs commands
 - Optimize for performance (avoid object allocations in hot paths)
+- **NEW**: Add performance benchmarks for new ZPL commands
+- **NEW**: Verify performance thresholds (<0.1ms simple, <1ms complex)
+- **NEW**: Use `./gradlew check` for comprehensive validation
 
 ### ❌ Anti-Patterns to Avoid  
 - Don't create mutable AST nodes (use immutable data classes)
@@ -373,6 +541,9 @@ class NewFeatureE2ETest : StringSpec({
 - Don't skip context-aware lexing for special syntax
 - Don't create multiple passes over input (single-pass parsing)
 - Don't ignore performance optimization guidelines
+- **NEW**: Don't skip performance benchmarks for new commands
+- **NEW**: Don't ignore performance regression warnings
+- **NEW**: Don't skip `./gradlew check` validation before committing
 
 ### Coverage Requirements
 - **Core parsing logic**: 100% (lexer, parser, AST generation)
@@ -382,15 +553,21 @@ class NewFeatureE2ETest : StringSpec({
 - **Overall minimum**: 80%
 
 ### Final Checklist
-- [ ] All tests pass: `./gradlew test`
-- [ ] No formatting errors: `./gradlew ktlintFormat`
-- [ ] No static analysis errors: `./gradlew detekt`  
-- [ ] New AST nodes implement visitor pattern
-- [ ] Parser integrates with main parse() method
-- [ ] Context-aware lexing handles new syntax
-- [ ] 80%+ code coverage maintained
-- [ ] Performance optimization guidelines followed
-- [ ] ZPL command reference updated in `data/zpl/` if needed
+- [ ] **Quality Gates Pass**: `./gradlew check` succeeds (includes ktlint, detekt, tests)
+- [ ] **Code Coverage**: 80%+ maintained via `./gradlew jacocoTestReport`
+- [ ] **Performance Requirements (MANDATORY for new commands)**:
+  - [ ] Performance benchmarks created in `src/benchmark/kotlin/`
+  - [ ] Benchmark thresholds met (<0.1ms simple, <1ms complex)
+  - [ ] No regression in existing commands (>10% triggers fix PRP)
+  - [ ] `./gradlew benchmark` passes without degradation warnings
+  - [ ] baseline.json updated if performance improved
+- [ ] **Build Verification**: `./gradlew clean build` and `./gradlew run` succeed
+- [ ] **ZPL Parser Specific**:
+  - [ ] New AST nodes implement visitor pattern
+  - [ ] Parser integrates with main parse() method
+  - [ ] Context-aware lexing handles new syntax
+  - [ ] Performance optimization guidelines followed
+  - [ ] ZPL command reference updated in `data/zpl/` if needed
 
 ### Post-Implementation Review
 

@@ -1,0 +1,108 @@
+{
+  "version": "1.0.0",
+  "createdAt": 0,
+  "lastUpdated": 0,
+  "description": "Performance baseline for ZPL parser benchmarks",
+  "thresholds": {
+    "simpleCommands": {
+      "maxAverageTimeNs": 100000,
+      "description": "Simple commands (^XA, ^XZ) should execute in <0.1ms"
+    },
+    "complexCommands": {
+      "maxAverageTimeNs": 1000000,
+      "description": "Complex commands (^FO, ^FD, ^A) should execute in <1ms"
+    },
+    "regressionThreshold": 0.10,
+    "description": ">10% performance degradation triggers warnings"
+  },
+  "commandBenchmarks": {
+    "benchmarkStartFormatCommand": {
+      "commandName": "^XA",
+      "commandType": "simple",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    },
+    "benchmarkEndFormatCommand": {
+      "commandName": "^XZ", 
+      "commandType": "simple",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    },
+    "benchmarkFieldOriginCommand": {
+      "commandName": "^FO",
+      "commandType": "complex",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    },
+    "benchmarkFieldDataCommand": {
+      "commandName": "^FD",
+      "commandType": "complex", 
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    },
+    "benchmarkFontCommandFull": {
+      "commandName": "^A",
+      "commandType": "complex",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    }
+  },
+  "e2eBenchmarks": {
+    "benchmarkSimpleSingleFieldLabel": {
+      "labelType": "simple",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    },
+    "benchmarkProductLabel": {
+      "labelType": "complex",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    },
+    "benchmarkLargeInventoryLabel": {
+      "labelType": "large",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "throughputOpsPerSec": 0,
+      "lastMeasured": 0
+    }
+  },
+  "memoryBenchmarks": {
+    "measureSmallAllocation": {
+      "allocationType": "small",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "lastMeasured": 0
+    },
+    "measureLargeAllocation": {
+      "allocationType": "large", 
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "lastMeasured": 0
+    },
+    "measureGcOverhead": {
+      "allocationType": "gc_stress",
+      "averageTimeNs": 0,
+      "memoryAllocatedBytes": 0,
+      "gcOverheadPercent": 0,
+      "lastMeasured": 0
+    }
+  },
+  "history": {
+    "description": "Historical performance data for trend analysis",
+    "measurements": []
+  }
+}

@@ -1,25 +1,46 @@
 ## FEATURE:
 
-Modify the existing Maverick Media Clients List screen to display reference and name fields with search and filter capabilities. Currently the Clients List screen has no visible fields, so this enhancement will make the basic client information accessible and searchable through the Filament table interface.
+**Performance Benchmarking System for ZPL Parser Commands**
+
+Implement a comprehensive benchmarking system for ZPL command parsing to ensure the parser maintains high-performance standards and catches performance degradation early. The system should:
+
+- Benchmark each existing ZPL command (^XA, ^XZ, ^FO, ^FD, ^A) for both execution time and memory usage
+- Automatically benchmark any new commands added in the future
+- Set aggressive performance thresholds targeting very low millisecond execution times (suitable for internet transfer scenarios)
+- Integrate into validation workflow with dedicated Gradle task
+- Report warnings when performance degrades without failing builds
+- Test with both small and complex ZPL input data
+- Update documentation (CLAUDE.md and prp_base) to reflect new architecture and quality checks
 
 ## EXAMPLES:
 
-No code examples yet.
+No existing benchmarking examples in the codebase. Will need to establish new patterns and reference existing code structure:
+
+- Existing test patterns in `src/test/kotlin/` using Kotest StringSpec for structure reference
+- Command implementations in `src/main/kotlin/com/whitespacesystems/parser/ast/` for integration points
+- Parser logic in `src/main/kotlin/com/whitespacesystems/parser/parser/ZplParser.kt` for measurement points
+- Build configuration in `build.gradle.kts` for new Gradle task integration
+- Existing quality tools (Detekt, Ktlint, Jacoco) for workflow integration patterns
 
 ## DOCUMENTATION:
 
-- Filament Tables Overview: https://filamentphp.com/docs/4.x/tables/overview
-- Text Columns: https://filamentphp.com/docs/4.x/tables/columns/text
-- Filters Overview: https://filamentphp.com/docs/4.x/tables/filters/overview
-- Empty State: https://filamentphp.com/docs/4.x/tables/empty-state
-- Testing Filament: https://filamentphp.com/docs/4.x/testing/overview
-- Testing Filament Resources: https://filamentphp.com/docs/4.x/testing/testing-resources
-- Testing Filament Tables: https://filamentphp.com/docs/4.x/testing/testing-tables
+Research and reference documentation will be needed for:
+
+- **JMH (Java Microbenchmark Harness)** - Industry standard for JVM performance testing
+- **Kotlin benchmarking libraries** - Kotlin-specific performance testing tools and best practices
+- **Gradle integration** - Documentation for creating custom Gradle tasks and integrating with existing build pipeline
+- **JVM performance testing best practices** - Memory profiling, garbage collection considerations, warmup strategies
+- **Baseline establishment methodologies** - Techniques for establishing and maintaining performance baselines
+- **CI/CD benchmarking integration** - Automated performance testing in continuous integration workflows
 
 ## OTHER CONSIDERATIONS:
 
-- Maverick Media tenant only - ensure proper tenant isolation
-- Changes should be made to existing List view's $table configuration
-- Reference filter must be range-style (e.g., find records where reference is 10000...10005)
-- Both reference and name fields need to be searchable, filterable, and sortable
-- Follow existing project patterns for Filament table configuration
+- **Performance Thresholds**: Establish aggressive sub-millisecond targets for individual command parsing (e.g., <0.1ms for simple commands, <1ms for complex commands) suitable for internet transfer scenarios
+- **Gradle Task**: Create dedicated `./gradlew benchmark` task separate from regular testing workflow
+- **Failure Strategy**: Report warnings only when performance degrades - do not fail builds to maintain development velocity
+- **Baseline Management**: Implement automatic baseline establishment and storage mechanism, with ability to update baselines when intentional changes occur
+- **Dual Metrics**: Benchmark both execution time (speed) and memory allocation/usage patterns
+- **Test Data Variety**: Create benchmark suite with small ZPL labels (simple ^FO^FD combinations) and complex labels (multiple commands, large data, nested structures)
+- **Documentation Updates**: Update CLAUDE.md sections on development workflow, quality checks, and architecture to include benchmarking requirements and process
+- **Performance Regression Detection**: Implement percentage-based degradation detection (e.g., warn if >10% slower than baseline)
+- **Warmup Considerations**: Account for JVM warmup periods in benchmark design to ensure accurate measurements

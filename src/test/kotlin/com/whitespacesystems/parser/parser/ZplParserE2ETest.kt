@@ -152,12 +152,13 @@ class ZplParserE2ETest : StringSpec({
     }
 
     "should parse real-world product label with XA/XZ boundaries" {
-        val zplCode = """
+        val zplCode =
+            """
             ^XA
             ^FO300,30^A0N,30^FDProduct Label
             ^FO20,100^A0N,25^FDSKU: 112345678000001107
             ^XZ
-        """.trimIndent()
+            """.trimIndent()
 
         val lexer = Lexer(zplCode)
         val parser = ZplParser(lexer.tokenize())
