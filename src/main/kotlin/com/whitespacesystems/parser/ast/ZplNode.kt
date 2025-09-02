@@ -17,6 +17,10 @@ sealed class ZplNode {
  * Implementations can perform operations like printing, validation, or code generation.
  */
 interface ZplNodeVisitor<T> {
+    fun visitStartFormatCommand(command: StartFormatCommand): T
+
+    fun visitEndFormatCommand(command: EndFormatCommand): T
+
     fun visitFieldOriginCommand(command: FieldOriginCommand): T
 
     fun visitFieldDataCommand(command: FieldDataCommand): T

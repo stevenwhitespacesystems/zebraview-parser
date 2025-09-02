@@ -1,8 +1,10 @@
 package com.whitespacesystems.parser.parser
 
+import com.whitespacesystems.parser.ast.EndFormatCommand
 import com.whitespacesystems.parser.ast.FieldDataCommand
 import com.whitespacesystems.parser.ast.FieldOriginCommand
 import com.whitespacesystems.parser.ast.FontCommand
+import com.whitespacesystems.parser.ast.StartFormatCommand
 import com.whitespacesystems.parser.ast.ZplNode
 import com.whitespacesystems.parser.ast.ZplProgram
 import com.whitespacesystems.parser.lexer.Token
@@ -49,6 +51,8 @@ class ZplParser(private val tokens: List<Token>) {
         val commandToken = expect(TokenType.COMMAND)
 
         return when (commandToken.value) {
+            "XA" -> parseStartFormatCommand()
+            "XZ" -> parseEndFormatCommand()
             "FO" -> parseFieldOriginCommand()
             "FD" -> parseFieldDataCommand()
             "A" -> parseFontCommand(commandToken.value)
@@ -61,6 +65,22 @@ class ZplParser(private val tokens: List<Token>) {
                 }
             }
         }
+    }
+
+    /**
+     * Parse Start Format command: ^XA
+     */
+    private fun parseStartFormatCommand(): StartFormatCommand {
+        // No parameters to parse - XA command is complete after COMMAND token
+        return StartFormatCommand()
+    }
+
+    /**
+     * Parse End Format command: ^XZ
+     */
+    private fun parseEndFormatCommand(): EndFormatCommand {
+        // No parameters to parse - XZ command is complete after COMMAND token
+        return EndFormatCommand()
     }
 
     /**

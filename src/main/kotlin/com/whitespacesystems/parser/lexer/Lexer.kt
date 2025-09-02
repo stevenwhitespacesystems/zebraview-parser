@@ -195,7 +195,6 @@ class Lexer(private val input: String) {
         return Token(TokenType.STRING, value.toString().trim(), start, startLine, startColumn)
     }
 
-
     /**
      * Skip whitespace characters (space, tab, newline, etc.)
      */

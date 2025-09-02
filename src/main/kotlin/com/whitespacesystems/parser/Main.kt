@@ -37,11 +37,39 @@ fun main() {
     println("AST:")
     println(printer.print(demo3Program))
 
+    // Demo 4: NEW! Complete ZPL Label with ^XA/^XZ boundaries
+    println("\n📋 Demo 4: Complete ZPL Label with ^XA/^XZ Format Commands")
+    println("ZPL: ^XA^FO100,50^A0N,30^FDComplete Label^XZ")
+    val demo4Lexer = Lexer("^XA^FO100,50^A0N,30^FDComplete Label^XZ")
+    val demo4Parser = ZplParser(demo4Lexer.tokenize())
+    val demo4Program = demo4Parser.parse()
+    println("AST:")
+    println(printer.print(demo4Program))
+
+    // Demo 5: Real-world product label with boundaries
+    println("\n📋 Demo 5: Real-World Product Label with Format Boundaries")
+    println("ZPL: ^XA^FO300,30^A0N,30^FDProduct Label^FO20,100^A0N,25^FDSKU: 123456^XZ")
+    val demo5Lexer = Lexer("^XA^FO300,30^A0N,30^FDProduct Label^FO20,100^A0N,25^FDSKU: 123456^XZ")
+    val demo5Parser = ZplParser(demo5Lexer.tokenize())
+    val demo5Program = demo5Parser.parse()
+    println("AST:")
+    println(printer.print(demo5Program))
+
+    // Demo 6: Multiple complete labels  
+    println("\n📋 Demo 6: Multiple Complete ZPL Labels")
+    println("ZPL: ^XA^FO10,10^FDFirst Label^XZ^XA^FO20,20^FDSecond Label^XZ")
+    val demo6Lexer = Lexer("^XA^FO10,10^FDFirst Label^XZ^XA^FO20,20^FDSecond Label^XZ")
+    val demo6Parser = ZplParser(demo6Lexer.tokenize())
+    val demo6Program = demo6Parser.parse()
+    println("AST:")
+    println(printer.print(demo6Program))
+
     println("\n" + "=".repeat(60))
     println("✅ All demos completed successfully!")
-    println("✅ Parser supports: ^FO (positioning), ^FD (text data), ^A (fonts)")
-    println("✅ Handles: commas in data, empty fields, various font formats")
+    println("✅ Parser supports: ^XA/^XZ (format boundaries), ^FO (positioning), ^FD (text data), ^A (fonts)")
+    println("✅ Handles: complete ZPL II labels, commas in data, empty fields, various font formats")
     println("✅ Built with TDD: RED → GREEN → REFACTOR")
     println("✅ Full test coverage with Kotest")
     println("✅ Code quality with Detekt & Ktlint")
+    println("✅ NEW: Support for industry-standard ZPL II format boundaries!")
 }
