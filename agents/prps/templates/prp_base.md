@@ -61,31 +61,55 @@ Template optimized for AI agents to implement features with sufficient context a
 ```kotlin
 // CRITICAL: Project-specific patterns from ZPL parser codebase
 
-// 1. Context-aware lexing - Field data vs command parsing
-// From Lexer.kt: Field data mode after ^FD commands treats everything as string until next ^
-if (command == "FD") {
-    fieldDataMode = true
+// 1. CRITICAL TOKEN PRECEDENCE - expectingFieldData MUST come first
+// Bug fix: Field data starting with digits was incorrectly tokenized
+when {
+    expectingFieldData -> {
+        // MUST be first priority - field data reads everything as string
+        readString(start, startLine, startColumn)
+    }
+    current.isDigit() -> readNumber(start, startLine, startColumn)  // After field data check
+    current.isLetter() -> readCommand(start, startLine, startColumn)
+}
+// Bug example: "^FD123 Main St" was tokenized as NUMBER("123") + STRING(" Main St")
+// Fixed by prioritizing expectingFieldData check
+
+// 2. Dynamic Character Support - Never hardcode ZPL characters
+// From Lexer.kt: Support for CC/CD/CT commands that change syntax characters
+private var caretChar: Char = '^'      // Format command prefix (changed by ^CC)
+private var tildeChar: Char = '~'      // Control command prefix (changed by ^CT)
+private var delimiterChar: Char = ','  // Parameter delimiter (changed by ^CD)
+// Always use these variables instead of hardcoded '^', '~', ','
+
+// 3. Command Lookup Optimization - O(1) command recognition
+// From Lexer.kt: HashMap for performance instead of sequential checks
+private val commandInfo = hashMapOf(
+    "FD" to CommandInfo(2, true),           // Field data - has string data
+    "CF" to CommandInfo(2, false, true),    // Change font - has variants (CFB, CF0)
+    "BC" to CommandInfo(2, false, true)     // Code 128 - has variants (BCR, BCN)
+)
+
+// 4. Command Variant Handling - Embedded parameters in command tokens
+// From ZplParser.kt: Commands like CFB, BCR, A0N have variants in the token itself
+if (commandToken.value.length > 2) {
+    font = commandToken.value[2]  // Extract 'B' from "CFB" command
 }
 
-// 2. Sealed class hierarchy for type-safe AST nodes
+// 5. Sealed class hierarchy for type-safe AST nodes
 // From ZplNode.kt: All command nodes extend sealed class
 sealed class ZplNode {
     abstract fun <T> accept(visitor: ZplNodeVisitor<T>): T
 }
 
-// 3. Parser error handling with position information
+// 6. Parser error handling with position information
 // From ZplParser.kt: All exceptions include token position
 throw ParseException("Expected coordinate parameter", token.position)
 
-// 4. Kotest StringSpec testing pattern
-// From existing tests: Descriptive test names with should/when format
-"should parse FO command with coordinates" {
-    val lexer = Lexer("^FO100,50")
-    val parser = ZplParser(lexer.tokenize())
-    // Test implementation
-}
+// 7. Context-aware lexing - Field data vs command parsing modes
+// From Lexer.kt: Field data mode after ^FD commands treats everything as string until next ^
+expectingFieldData = (finalCommandName == "FD") || (finalCommandName == "FX")
 
-// 5. Performance-critical parsing - avoid object allocations in loops
+// 8. Performance-critical parsing - avoid object allocations in loops
 // Use StringBuilder for string building, reuse collections where possible
 ```
 
@@ -98,21 +122,41 @@ throw ParseException("Expected coordinate parameter", token.position)
 
 ### Task List (in execution order)
 ```yaml
-# Core Implementation Tasks
-Task 1: CREATE src/main/kotlin/com/whitespacesystems/parser/ast/NewCommand.kt
-  - PATTERN: Follow existing AST node structure (FieldOriginCommand.kt)
-  - CRITICAL: Extend ZplNode sealed class, implement visitor pattern
-  - VERIFY: Proper data class with immutable properties
-
-Task 2: UPDATE src/main/kotlin/com/whitespacesystems/parser/parser/ZplParser.kt
-  - PATTERN: Add parseNewCommand() method following existing patterns
-  - CRITICAL: Handle token consumption, error reporting with positions
-  - VERIFY: Integrates with main parse() method
-
-Task 3: CREATE src/test/kotlin/com/whitespacesystems/parser/parser/NewCommandTest.kt
+# TDD Implementation Tasks (STRICT ORDER - Tests First!)
+Task 1: CREATE TEST FILE src/test/kotlin/com/whitespacesystems/parser/parser/NewCommandTest.kt
   - PATTERN: Use Kotest StringSpec with descriptive test names
-  - CRITICAL: Test parsing, validation, error cases, AST generation
-  - VERIFY: 80%+ coverage, all edge cases covered
+  - CRITICAL: Write ALL test cases FIRST (before any implementation)
+  - TESTS WILL FAIL - That's correct and expected
+  - VERIFY: ./gradlew test --tests "*NewCommand*" shows failures
+
+Task 2: RUN TESTS TO CONFIRM RED PHASE
+  - RUN: ./gradlew test --tests "*NewCommand*"
+  - VERIFY: All new tests are RED (failing) as expected
+  - DOCUMENT: List of expected test failures in notes
+
+Task 3: CREATE MINIMAL AST NODE src/main/kotlin/com/whitespacesystems/parser/ast/NewCommand.kt
+  - PATTERN: Follow existing AST node structure (FieldOriginCommand.kt)  
+  - CRITICAL: ONLY what's needed for FIRST test to pass
+  - NO extra features, NO optimizations
+  - VERIFY: Extends ZplNode sealed class, basic visitor pattern
+
+Task 4: CREATE MINIMAL PARSER LOGIC in ZplParser.kt
+  - ADD: parseNewCommand() method with basic parsing
+  - CRITICAL: ONLY enough logic for tests to pass
+  - NO complex parameter handling yet
+  - VERIFY: Method integrates with main parse() switch
+
+Task 5: VERIFY GREEN PHASE - All Tests Pass
+  - RUN: ./gradlew test --tests "*NewCommand*"
+  - VERIFY: All tests now pass (GREEN phase achieved)
+  - DOCUMENT: Confirm transition from RED to GREEN
+
+Task 6: REFACTOR PHASE - Optimize and Clean Up
+  - NOW add full parameter parsing, error handling
+  - Add performance optimizations
+  - Improve code structure and naming
+  - VERIFY: ./gradlew test still passes after refactoring
+  - VERIFY: 80%+ coverage via ./gradlew jacocoTestReport
 
 # Performance Validation Tasks (MANDATORY for new ZPL commands)
 Task N: CREATE src/benchmark/kotlin/.../NewCommandBenchmarks.kt
@@ -276,23 +320,41 @@ The parser follows a classic **lexer → parser → AST** architecture optimized
 
 ## 🚨 Development Requirements
 
-### TDD (MANDATORY - 80% Coverage Minimum)
-```bash
-# RED-GREEN-REFACTOR cycle with Kotest
-# 1. Write test FIRST (Kotest StringSpec)
-# 2. See it fail (RED)
-# 3. Implement parser logic
-# 4. See it pass (GREEN)
-# 5. Check coverage: ./gradlew jacocoTestReport
-```
+### TDD (MANDATORY - Write Tests FIRST!)
+**YOU MUST FOLLOW RED-GREEN-REFACTOR STRICTLY:**
 
+1. **RED PHASE - Write failing test FIRST**
+   - Create test file BEFORE any implementation code exists
+   - Write comprehensive test cases that WILL FAIL
+   - Run tests to confirm they fail: `./gradlew test --tests "*NewFeature*"`
+   - DO NOT write ANY implementation code yet
+
+2. **GREEN PHASE - Write MINIMAL code to pass**
+   - Write ONLY enough code to make tests pass
+   - No extra features, no optimizations, no "nice-to-haves"
+   - Run tests to confirm they pass
+   - Focus on the simplest implementation that works
+
+3. **REFACTOR PHASE - Improve code quality**
+   - NOW optimize and clean up the code
+   - Add performance improvements
+   - Improve naming and structure
+   - Tests must still pass after refactoring
+   - Check coverage: `./gradlew jacocoTestReport`
+
+**⚠️ VIOLATION OF TDD = IMMEDIATE REJECTION**
+**If you write implementation before tests, STOP and start over**
 **⚠️ CODE WITHOUT TESTS WILL BE REJECTED. NO EXCEPTIONS.**
 
-### Testing Strategy: Kotest StringSpec
-**Testing Framework Pattern:**
+### Testing Strategy: Kotest StringSpec with TDD Flow
+**RED-GREEN-REFACTOR Testing Pattern:**
 ```kotlin
-class NewFeatureTest : StringSpec({
-    "should parse new ZPL command" {
+// STEP 1: Write test FIRST (before ANY implementation exists)
+// This test WILL FAIL initially - that's the RED phase
+class NewCommandTest : StringSpec({
+    
+    "should parse new command with parameters" {
+        // This test WILL FAIL because NewCommand doesn't exist yet
         val lexer = Lexer("^NewCommand100,200")
         val parser = ZplParser(lexer.tokenize())
         val program = parser.parse()
@@ -300,9 +362,44 @@ class NewFeatureTest : StringSpec({
         program.commands.size shouldBe 1
         val command = program.commands[0]
         command.shouldBeInstanceOf<NewCommand>()
-        // Verify command-specific properties
+        command.param1 shouldBe 100
+        command.param2 shouldBe 200
+    }
+    
+    "should handle new command with default values" {
+        val lexer = Lexer("^NewCommand")
+        val parser = ZplParser(lexer.tokenize())
+        val program = parser.parse()
+        
+        val command = program.commands[0] as NewCommand
+        command.param1 shouldBe 0  // default value
+        command.param2 shouldBe 0  // default value
+    }
+    
+    "should throw ParseException for invalid syntax" {
+        val lexer = Lexer("^NewCommandInvalid")
+        val parser = ZplParser(lexer.tokenize())
+        
+        shouldThrow<ParseException> {
+            parser.parse()
+        }.message shouldContain "Expected parameter"
     }
 })
+
+// STEP 2: Run test to confirm RED phase
+// ./gradlew test --tests "NewCommandTest"
+// Result: Tests FAIL because NewCommand class doesn't exist
+
+// STEP 3: Create MINIMAL implementation for GREEN phase
+// Create NewCommand.kt with bare minimum to pass tests
+
+// STEP 4: Run test to confirm GREEN phase  
+// ./gradlew test --tests "NewCommandTest"
+// Result: Tests PASS
+
+// STEP 5: REFACTOR - Now optimize and improve the implementation
+// Add better error handling, performance improvements, etc.
+// Tests must still pass after refactoring
 ```
 
 ### Essential Development Commands
@@ -522,18 +619,26 @@ class BenchmarkSystemTest : StringSpec({
 ## ZPL Parser Guidelines
 
 ### ✅ Required Patterns
-- Write tests FIRST (TDD with 80% coverage minimum)
+- **STRICT TDD**: Write tests FIRST, confirm RED, achieve GREEN, then REFACTOR
 - Use Kotest StringSpec with descriptive test names
 - Follow sealed class hierarchy for AST nodes
 - Implement visitor pattern for all new AST nodes
 - Include position information in all ParseExceptions
-- Use context-aware lexing for field data vs commands
+- **CRITICAL**: Use expectingFieldData check BEFORE digit recognition in lexer
+- Use dynamic character variables (caretChar, tildeChar, delimiterChar) - never hardcode
+- Use command lookup HashMap for O(1) performance
+- Handle command variants embedded in tokens (CFB, BCR, A0N)
 - Optimize for performance (avoid object allocations in hot paths)
-- **NEW**: Add performance benchmarks for new ZPL commands
-- **NEW**: Verify performance thresholds (<0.1ms simple, <1ms complex)
-- **NEW**: Use `./gradlew check` for comprehensive validation
+- Add performance benchmarks for new ZPL commands
+- Verify performance thresholds (<0.1ms simple, <1ms complex)
+- Achieve 100% test pass rate (not 99%, not 101/102)
+- Use `./gradlew check` for comprehensive validation
 
 ### ❌ Anti-Patterns to Avoid  
+- **NEVER write implementation before tests** (violates TDD)
+- Don't accept 99% test success - must be 100%
+- Don't put digit recognition before expectingFieldData check (causes tokenization bugs)
+- Don't hardcode '^', '~', ',' characters (breaks CC/CD/CT command support)
 - Don't create mutable AST nodes (use immutable data classes)
 - Don't skip error position tracking in ParseExceptions
 - Don't use regex for performance-critical parsing paths
@@ -541,9 +646,10 @@ class BenchmarkSystemTest : StringSpec({
 - Don't skip context-aware lexing for special syntax
 - Don't create multiple passes over input (single-pass parsing)
 - Don't ignore performance optimization guidelines
-- **NEW**: Don't skip performance benchmarks for new commands
-- **NEW**: Don't ignore performance regression warnings
-- **NEW**: Don't skip `./gradlew check` validation before committing
+- Don't skip performance benchmarks for new commands
+- Don't ignore performance regression warnings
+- Don't skip `./gradlew check` validation before committing
+- Don't compromise performance when fixing bugs
 
 ### Coverage Requirements
 - **Core parsing logic**: 100% (lexer, parser, AST generation)
@@ -553,8 +659,14 @@ class BenchmarkSystemTest : StringSpec({
 - **Overall minimum**: 80%
 
 ### Final Checklist
+- [ ] **TDD Compliance**: RED-GREEN-REFACTOR cycle followed strictly
+  - [ ] Tests written FIRST before any implementation
+  - [ ] Confirmed RED phase (tests failed initially)
+  - [ ] Achieved GREEN phase (minimal implementation passes tests)
+  - [ ] Completed REFACTOR phase (optimized without breaking tests)
 - [ ] **Quality Gates Pass**: `./gradlew check` succeeds (includes ktlint, detekt, tests)
 - [ ] **Code Coverage**: 80%+ maintained via `./gradlew jacocoTestReport`
+- [ ] **100% Test Pass Requirement**: ALL tests must pass (not 99%, not 101/102)
 - [ ] **Performance Requirements (MANDATORY for new commands)**:
   - [ ] Performance benchmarks created in `src/benchmark/kotlin/`
   - [ ] Benchmark thresholds met (<0.1ms simple, <1ms complex)
@@ -565,7 +677,9 @@ class BenchmarkSystemTest : StringSpec({
 - [ ] **ZPL Parser Specific**:
   - [ ] New AST nodes implement visitor pattern
   - [ ] Parser integrates with main parse() method
-  - [ ] Context-aware lexing handles new syntax
+  - [ ] Context-aware lexing handles new syntax correctly
+  - [ ] Token precedence follows expectingFieldData-first pattern
+  - [ ] Dynamic character variables used (no hardcoded '^', '~', ',')
   - [ ] Performance optimization guidelines followed
   - [ ] ZPL command reference updated in `data/zpl/` if needed
 

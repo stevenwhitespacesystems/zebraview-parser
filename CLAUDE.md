@@ -27,6 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Single-pass parsing**: Avoid multiple passes over input where possible
 - **Lazy evaluation**: Use sequences and lazy collections for token processing
 - **Context-aware parsing**: Field data (^FD) vs command parsing modes
+- **Dynamic character support**: Format commands (^), control commands (~), and delimiters (,) can be changed at runtime
 - **TDD is mandatory**: Write tests first, 80% coverage minimum
 - **Type safety**: Leverage Kotlin sealed classes for AST nodes
 - **Error handling**: Comprehensive exception handling with position information
@@ -38,9 +39,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Reuse objects** where possible - consider object pooling for tokens
 - **Minimize regex usage** - use character-by-character parsing for speed
 - **Profile regularly** - measure parsing performance on large ZPL files
-- **Cache frequently accessed data** - command mappings, token types
+- **Cache frequently accessed data** - command mappings, token types using HashMap lookup tables
 - **Benchmark new commands** - all new ZPL commands must have performance benchmarks
 - **Monitor performance regression** - >10% degradation triggers warnings in CI/CD
+- **Optimize token precedence** - Critical parsing checks (like field data mode) must come before general checks
 
 ## 🏗️ Architecture
 
@@ -53,6 +55,7 @@ The parser follows a classic lexer → parser → AST architecture optimized for
 - `Token.kt` - Token types and data structures
 - Handles ZPL-specific syntax: `^` commands, `~` control commands, comma-separated parameters
 - Context-aware parsing (field data mode after `^FD` commands)
+- **Dynamic Character Tracking** - Supports changeable format characters via CC/CD/CT commands
 
 **Parser** (`src/main/kotlin/com/whitespacesystems/parser/parser/`)
 - `ZplParser.kt` - Recursive descent parser that converts tokens to AST
@@ -77,6 +80,73 @@ The parser follows a classic lexer → parser → AST architecture optimized for
 - **Recursive Descent Parsing** - Predictable, maintainable parsing strategy  
 - **Sealed Classes** - Type-safe AST nodes with exhaustive pattern matching
 - **Context-Aware Lexing** - Special handling for field data vs command contexts
+- **Dynamic Character Tracking** - Runtime support for changeable ZPL characters (CC/CD/CT commands)
+- **Command Lookup Optimization** - O(1) command recognition using HashMap for performance
+
+### 🚨 Critical Parsing Patterns
+
+#### Dynamic Character Support
+```kotlin
+// ZPL allows runtime changes to format characters via CC/CD/CT commands
+private var caretChar: Char = '^'      // Format command prefix (changed by ^CC)
+private var tildeChar: Char = '~'      // Control command prefix (changed by ^CT) 
+private var delimiterChar: Char = ','  // Parameter delimiter (changed by ^CD)
+
+// Always use variables, never hardcode characters
+when (current == caretChar || current == tildeChar) {
+    // Handle command prefix
+}
+```
+
+#### Command Lookup Optimization
+```kotlin
+// O(1) command recognition using HashMap instead of sequential checks
+private val commandInfo = hashMapOf(
+    "FD" to CommandInfo(2, true),           // Field data - has string data
+    "CF" to CommandInfo(2, false, true),    // Change font - has variants (CFB, CF0)
+    "BC" to CommandInfo(2, false, true)     // Code 128 - has variants (BCR, BCN)
+)
+
+private data class CommandInfo(
+    val minLength: Int,
+    val hasStringData: Boolean,
+    val hasVariants: Boolean = false
+)
+```
+
+#### Critical Token Precedence
+```kotlin
+// CRITICAL: expectingFieldData check MUST come before digit recognition
+// Bug example: "^FD123 Main St" incorrectly tokenized as NUMBER("123") + STRING(" Main St")
+when {
+    expectingFieldData -> {
+        // Field data always reads as string regardless of first character
+        readString(start, startLine, startColumn)  // MUST be first priority
+    }
+    current.isDigit() -> readNumber(start, startLine, startColumn)  // After field data check
+    current.isLetter() -> readCommand(start, startLine, startColumn)
+    // ... other token types
+}
+```
+
+#### Command Variant Handling
+```kotlin
+// Commands like CF, BC, A support embedded variants (CFB, BCR, A0N)
+when (commandName) {
+    "CF" -> {
+        // Check if command token contains font variant (CFB -> font='B')
+        if (commandToken.value.length > 2) {
+            font = commandToken.value[2]  // Extract 'B' from "CFB"
+        }
+    }
+    "BC" -> {
+        // Check if command token contains orientation (BCR -> orientation='R')
+        if (commandToken.value.length > 2) {
+            orientation = commandToken.value[2]  // Extract 'R' from "BCR"
+        }
+    }
+}
+```
 
 ## 🛠️ Development Environment
 
