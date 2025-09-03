@@ -238,7 +238,7 @@ Task 12: UPDATE CLAUDE.md - Add benchmarking workflow and requirements
   - CRITICAL: Document performance targets, commands, baseline management
   - VERIFY: Documentation complete and clear for future developers
 
-Task 13: UPDATE agents/prps/templates/prp_base.md - Add performance validation
+Task 13: UPDATE agents/prps/templates/PRP.md - Add performance validation
   - PATTERN: Extend existing Quality Assurance Guide section
   - CRITICAL: Include benchmark execution in standard PRP validation gates
   - VERIFY: Future PRPs will include performance validation when applicable

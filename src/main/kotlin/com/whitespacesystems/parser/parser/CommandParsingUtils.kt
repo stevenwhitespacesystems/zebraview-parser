@@ -12,6 +12,7 @@ object CommandParsingUtils {
             commandValue.startsWith("A") && commandValue != "A" -> true
             commandValue.startsWith("CF") && commandValue != "CF" -> true
             commandValue.startsWith("BC") && commandValue != "BC" -> true
+            commandValue.startsWith("BE") && commandValue != "BE" -> true
             else -> false
         }
     }
@@ -24,6 +25,7 @@ object CommandParsingUtils {
             commandValue.startsWith("A") -> "A"
             commandValue.startsWith("CF") -> "CF"
             commandValue.startsWith("BC") -> "BC"
+            commandValue.startsWith("BE") -> "BE"
             else -> throw ParseException(
                 "Unknown command variant: $commandValue",
             )

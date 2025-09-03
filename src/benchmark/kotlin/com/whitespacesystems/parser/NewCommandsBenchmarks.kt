@@ -12,7 +12,7 @@ import org.openjdk.jmh.annotations.State
 import java.util.concurrent.TimeUnit
 
 /**
- * Performance benchmarks for the 7 new ZPL commands.
+ * Performance benchmarks for the new ZPL commands including BE (EAN-13).
  * Target thresholds: <0.1ms for simple commands, <1ms for complex commands.
  */
 @State(Scope.Benchmark)
@@ -80,7 +80,45 @@ open class NewCommandsBenchmarks {
         return ZplParser(lexer.tokenize()).parse()
     }
 
-    // End-to-end scenarios with new commands
+    // NEW: BE (EAN-13) Command Benchmarks (target: <1ms = 1,000,000ns)
+
+    @Benchmark
+    fun benchmarkBECommandSimple(): ZplProgram {
+        val lexer = Lexer("^BE")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkBECommandWithOrientation(): ZplProgram {
+        val lexer = Lexer("^BER")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkBECommandAllParameters(): ZplProgram {
+        val lexer = Lexer("^BEI,256,N,Y")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkBECommandWithFieldData(): ZplProgram {
+        val lexer = Lexer("^BE^FD123456789012")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkBECommandJAN13(): ZplProgram {
+        val lexer = Lexer("^BE^FD491234567890")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkBECommandComplex(): ZplProgram {
+        val lexer = Lexer("^BEI,200,Y,N")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    // End-to-end scenarios with new commands including BE
 
     @Benchmark
     fun benchmarkSimpleLabelWithNewCommands(): ZplProgram {
@@ -97,6 +135,18 @@ open class NewCommandsBenchmarks {
     @Benchmark
     fun benchmarkLabelWithBarcode(): ZplProgram {
         val lexer = Lexer("^XA^BY3,2.5,100^FO100,100^BCN,150,Y,N,N,A^FD1234567890^FS^XZ")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkEAN13ShippingLabel(): ZplProgram {
+        val lexer = Lexer("^XA^FO100,100^BE^FD123456789012^FS^FO100,250^FDShipping Label^XZ")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkComplexEAN13Label(): ZplProgram {
+        val lexer = Lexer("^XA^CF0,25^FO50,50^BER,150,Y,N^FD491234567890^FS^FO50,100^FDJapanese Product^FS^XZ")
         return ZplParser(lexer.tokenize()).parse()
     }
 
@@ -119,11 +169,35 @@ open class NewCommandsBenchmarks {
         return ZplParser(lexer.tokenize()).parse()
     }
 
+    @Benchmark
+    fun benchmarkComprehensiveLabelWithEAN13(): ZplProgram {
+        val zplCode = """
+            ^XA
+            ^FXRETAIL PRODUCT LABEL
+            ^CFA,20,12
+            ^FO50,50^GB350,250,3,B,0^FS
+            ^FO100,100^FDProduct Information^FS
+            ^FO100,130^FDCode: ABC-123^FS
+            ^BY2,2.0,60
+            ^FO100,170^BER,120,Y,N^FD491234567890^FS
+            ^XZ
+        """.trimIndent()
+        
+        val lexer = Lexer(zplCode)
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
     // Mixed command scenarios for integration testing
 
     @Benchmark
     fun benchmarkMixedOldAndNewCommands(): ZplProgram {
         val lexer = Lexer("^XA^FO100,50^A0N,30^CF0,25^GB200,100,3^FR^FDTest^FS^XZ")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkMixedBarcodeBenchmark(): ZplProgram {
+        val lexer = Lexer("^XA^FO50,50^BCN,100^FD1234567890^FS^FO50,200^BE^FD123456789012^FS^XZ")
         return ZplParser(lexer.tokenize()).parse()
     }
 
@@ -136,6 +210,12 @@ open class NewCommandsBenchmarks {
     @Benchmark
     fun benchmarkMultipleFontChanges(): ZplProgram {
         val lexer = Lexer("^XA^CFA,20^CFB,25^CF0,30^FO100,100^FDTest^FS^XZ")
+        return ZplParser(lexer.tokenize()).parse()
+    }
+
+    @Benchmark
+    fun benchmarkMultipleBECommands(): ZplProgram {
+        val lexer = Lexer("^XA^FO50,50^BE^FD123456789012^FS^FO50,150^BER^FD491234567890^FS^FO50,250^BEI^FD567890123456^FS^XZ")
         return ZplParser(lexer.tokenize()).parse()
     }
 }

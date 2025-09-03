@@ -1,5 +1,6 @@
 package com.whitespacesystems.parser.parser
 
+import com.whitespacesystems.parser.ast.BECommand
 import com.whitespacesystems.parser.ast.BarCodeDefaultCommand
 import com.whitespacesystems.parser.ast.ChangeFontCommand
 import com.whitespacesystems.parser.ast.Code128Command
@@ -72,6 +73,7 @@ class ZplParser(private val tokens: List<Token>) {
             "FS" -> BasicCommandParsingUtils.parseFieldSeparatorCommand()
             "BY" -> parseBarCodeDefaultCommand()
             "BC" -> parseCode128Command()
+            "BE" -> parseBECommand()
             "A" -> parseFontCommand(commandToken.value)
             else -> parseCommandVariant(commandToken)
         }
@@ -91,6 +93,7 @@ class ZplParser(private val tokens: List<Token>) {
             "A" -> parseFontCommand(commandToken.value)
             "CF" -> parseChangeFontCommand()
             "BC" -> parseCode128Command()
+            "BE" -> parseBECommand()
             else -> throw ParseException(
                 "Unsupported command variant: ${commandToken.value}",
             )
@@ -107,41 +110,34 @@ class ZplParser(private val tokens: List<Token>) {
 
         // Parse font and orientation from command value
         when {
-            commandValue == "A" -> {
-                // Just ^A, font will be default 'A'
-                font = 'A'
-                orientation = null
-            }
-            commandValue.length == 2 -> {
-                // ^A0 or ^AB
-                font = commandValue[1]
-                orientation = null
-            }
-            commandValue.length == ZplDefaults.COMMAND_TOKEN_MIN_LENGTH -> {
-                // ^A0N or ^ABR
+            commandValue.length >= 3 -> {
                 font = commandValue[1]
                 orientation = commandValue[2]
             }
+
+            commandValue.length == 2 -> {
+                font = commandValue[1]
+                orientation = null
+            }
+
             else -> {
-                throw ParseException("Invalid font command format: $commandValue")
+                font = '0'
+                orientation = null
             }
         }
 
-        // Parse optional height and width parameters
-        var height: Int? = null
-        var width: Int? = null
+        // Parse height parameter
+        val height = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect)
 
-        if (current.type == TokenType.COMMA) {
-            advance() // consume comma
-            height = expect(TokenType.NUMBER).value.toInt()
+        // Parse width parameter
+        val width = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect)
 
-            if (current.type == TokenType.COMMA) {
-                advance() // consume comma
-                width = expect(TokenType.NUMBER).value.toInt()
-            }
-        }
-
-        return FontCommand(font, orientation, height, width)
+        return FontCommand(
+            font,
+            orientation,
+            height,
+            width,
+        )
     }
 
     /**
@@ -153,49 +149,45 @@ class ZplParser(private val tokens: List<Token>) {
         var height = ZplDefaults.CF_DEFAULT_HEIGHT
         var width = ZplDefaults.CF_DEFAULT_WIDTH
 
-        // Check if we have parameters
-        if (ChangeFontParsingUtils.hasParameters(current.type)) {
-            when (current.type) {
-                TokenType.STRING -> {
-                    val text = expect(TokenType.STRING).value
-                    if (text.contains(",")) {
-                        // Comma-separated parameters - handle completely and return
-                        return ChangeFontParsingUtils.parseCommaSeparatedParameters(text)
-                    } else if (ChangeFontParsingUtils.shouldTreatAsSingleFont(text, commandToken)) {
-                        font = text[0]
-                    }
-                }
-                TokenType.COMMAND -> {
-                    val text = expect(TokenType.COMMAND).value
-                    if (ChangeFontParsingUtils.shouldTreatAsSingleFont(text, commandToken)) {
-                        font = text[0]
-                    }
-                }
-                TokenType.NUMBER -> {
-                    val numberValue = expect(TokenType.NUMBER).value
-                    val (parsedFont, parsedHeight) =
-                        ChangeFontParsingUtils.parseNumberParameter(
-                            numberValue,
-                            commandToken,
-                        )
-                    parsedFont?.let { font = it }
-                    parsedHeight?.let { height = it }
-                }
-                else -> { /* COMMA case handled below */ }
-            }
-
-            // Parse additional height and width parameters after comma
-            ParameterParsingUtils.parseAdditionalFontParameters(
-                { current },
-                ::advance,
-                ::expect,
-            )?.let { (additionalHeight, additionalWidth) ->
-                additionalHeight?.let { height = it }
-                additionalWidth?.let { width = it }
-            }
+        // Parse font from parameter if not embedded in command
+        if (commandToken.value.length == 2 && current.type == TokenType.STRING) {
+            val fontParam = expect(TokenType.STRING)
+            font = ChangeFontParsingUtils.parseFontParameter(fontParam)
         }
 
+        // Parse height
+        height = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect) ?: height
+
+        // Parse width
+        width = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect) ?: width
+
         return ChangeFontCommand(font, height, width)
+    }
+
+    /**
+     * Advance to the next token.
+     */
+    private fun advance(): Token {
+        val current = this.current
+        if (position < tokens.size - 1) {
+            position++
+        }
+        return current
+    }
+
+    /**
+     * Expect a specific token type and advance.
+     */
+    private fun expect(expectedType: TokenType): Token {
+        val currentToken = current
+        if (currentToken.type == expectedType) {
+            advance()
+            return currentToken
+        } else {
+            throw ParseException(
+                "Expected $expectedType but got ${currentToken.type} with value '${currentToken.value}' at position ${currentToken.position}",
+            )
+        }
     }
 
     /**
@@ -207,44 +199,34 @@ class ZplParser(private val tokens: List<Token>) {
         val height = expect(TokenType.NUMBER).value.toInt()
 
         var thickness = 1
-        var color = 'B'
-        var rounding = 0
+        var lineColor = 'B'
+        var cornerRadius = 0
 
         // Parse optional thickness parameter
         if (current.type == TokenType.COMMA) {
             advance()
-            thickness = expect(TokenType.NUMBER).value.toInt()
+            if (current.type == TokenType.NUMBER) {
+                thickness = expect(TokenType.NUMBER).value.toInt()
+            }
         }
 
-        // Parse optional color parameter
+        // Parse optional line color parameter
         if (current.type == TokenType.COMMA) {
             advance()
             if (current.type == TokenType.STRING) {
-                val colorValue = expect(TokenType.STRING).value
-                if (colorValue.length == 1) {
-                    color = colorValue[0]
-                }
-            } else if (current.type == TokenType.COMMAND) {
-                // Handle case where single letter color is parsed as command (like 'W')
-                val colorValue = expect(TokenType.COMMAND).value
-                if (colorValue.length == 1) {
-                    color = colorValue[0]
-                }
-            } else if (current.type == TokenType.NUMBER) {
-                // Handle case where color might be parsed as number (skip for now)
-                advance()
+                lineColor = expect(TokenType.STRING).value[0]
             }
         }
 
-        // Parse optional rounding parameter
+        // Parse optional corner radius parameter
         if (current.type == TokenType.COMMA) {
             advance()
             if (current.type == TokenType.NUMBER) {
-                rounding = expect(TokenType.NUMBER).value.toInt()
+                cornerRadius = expect(TokenType.NUMBER).value.toInt()
             }
         }
 
-        return GraphicBoxCommand(width, height, thickness, color, rounding)
+        return GraphicBoxCommand(width, height, thickness, lineColor, cornerRadius)
     }
 
     /**
@@ -256,19 +238,12 @@ class ZplParser(private val tokens: List<Token>) {
         var height = ZplDefaults.BY_DEFAULT_HEIGHT
 
         // Parse optional module width parameter
-        if (current.type == TokenType.NUMBER) {
-            moduleWidth = expect(TokenType.NUMBER).value.toInt()
+        moduleWidth = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect) ?: moduleWidth
 
-            // Parse optional width ratio and height parameters
-            val (parsedRatio, parsedHeight) =
-                BarCodeParsingUtils.parseBarCodeRatioAndHeight(
-                    { current },
-                    ::advance,
-                    ::expect,
-                )
-            widthRatio = parsedRatio
-            height = parsedHeight
-        }
+        // Parse width ratio and height using barcode utils
+        val (parsedRatio, parsedHeight) = BarCodeParsingUtils.parseBarCodeRatioAndHeight({ current }, ::advance, ::expect)
+        widthRatio = parsedRatio
+        height = parsedHeight
 
         return BarCodeDefaultCommand(moduleWidth, widthRatio, height)
     }
@@ -327,28 +302,40 @@ class ZplParser(private val tokens: List<Token>) {
     }
 
     /**
-     * Expect a specific token type and advance.
+     * Parse BE command: ^BEo,h,f,g
      */
-    private fun expect(expectedType: TokenType): Token {
-        if (current.type != expectedType) {
-            throw ParseException("Expected $expectedType but found ${current.type} at position ${current.position}")
-        }
-        val token = current
-        advance()
-        return token
-    }
+    private fun parseBECommand(): BECommand {
+        var height: Int? = null
+        var printInterpretation = true
+        var printInterpretationAbove = false
 
-    /**
-     * Advance to the next token.
-     */
-    private fun advance() {
-        if (position < tokens.size - 1) {
-            position++
+        // Extract orientation from command token first
+        val commandToken = tokens[position - 1]
+        var orientation = BEParsingUtils.extractOrientationFromCommand(commandToken)
+
+        // Parse orientation from string parameter if not in command token
+        if (commandToken.value.length == 2 && current.type == TokenType.STRING && current.value.isNotEmpty()) {
+            val stringToken = expect(TokenType.STRING)
+            orientation = BEParsingUtils.parseCharacterValue(stringToken, 'N')
         }
+
+        // Parse height parameter
+        height = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect)
+
+        // Parse print interpretation flag
+        printInterpretation =
+            ParameterParsingUtils.parseOptionalBooleanParameter(
+                printInterpretation,
+                { current },
+                ::advance,
+            )
+
+        // Parse print interpretation above flag
+        printInterpretationAbove =
+            ParameterParsingUtils.parseOptionalBooleanParameter(printInterpretationAbove, {
+                current
+            }, ::advance)
+
+        return BECommand(orientation, height, printInterpretation, printInterpretationAbove)
     }
 }
-
-/**
- * Exception thrown by the parser when it encounters invalid syntax.
- */
-class ParseException(message: String) : Exception(message)

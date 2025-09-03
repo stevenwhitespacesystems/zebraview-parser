@@ -1,5 +1,6 @@
 package com.whitespacesystems.parser.utils
 
+import com.whitespacesystems.parser.ast.BECommand
 import com.whitespacesystems.parser.ast.BarCodeDefaultCommand
 import com.whitespacesystems.parser.ast.ChangeFontCommand
 import com.whitespacesystems.parser.ast.Code128Command
@@ -20,7 +21,7 @@ import com.whitespacesystems.parser.ast.ZplProgram
  * Separated from AstPrinter to reduce function count and improve maintainability.
  *
  * Note: TooManyFunctions is suppressed because visitor pattern requires
- * one method per AST node type (13 types = 13 methods).
+ * one method per AST node type (14 types = 14 methods).
  */
 @Suppress("TooManyFunctions")
 internal class AstPrinterVisitorImpl : ZplNodeVisitor<String> {
@@ -95,5 +96,16 @@ internal class AstPrinterVisitorImpl : ZplNodeVisitor<String> {
                 add("mode='${command.mode}'")
             }
         return "Code128Command(${params.joinToString(", ")})"
+    }
+
+    override fun visitBECommand(command: BECommand): String {
+        val params =
+            mutableListOf<String>().apply {
+                add("orientation='${command.orientation}'")
+                command.height?.let { add("height=$it") } ?: add("height=null")
+                add("printInterpretation=${command.printInterpretation}")
+                add("printInterpretationAbove=${command.printInterpretationAbove}")
+            }
+        return "BECommand(${params.joinToString(", ")})"
     }
 }
