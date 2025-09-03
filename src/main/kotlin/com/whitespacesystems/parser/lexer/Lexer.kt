@@ -30,45 +30,6 @@ class Lexer(private val input: String) {
     private var caretChar: Char = '^' // Format command prefix (changed by ^CC)
     private var tildeChar: Char = '~' // Control command prefix (changed by ^CT)
     private var delimiterChar: Char = ',' // Parameter delimiter (changed by ^CD)
-
-    // Performance optimization: Command lookup for O(1) recognition
-    private val commandInfo =
-        hashMapOf(
-            // Start format
-            "XA" to CommandInfo(2, false),
-            // End format
-            "XZ" to CommandInfo(2, false),
-            // Field origin
-            "FO" to CommandInfo(2, false),
-            // Field data - has string data
-            "FD" to CommandInfo(2, true),
-            // Comment - has string data
-            "FX" to CommandInfo(2, true),
-            // Change font - has variants (CFA, CFB)
-            "CF" to CommandInfo(2, false, true),
-            // Graphic box
-            "GB" to CommandInfo(2, false),
-            // Field reverse
-            "FR" to CommandInfo(2, false),
-            // Field separator
-            "FS" to CommandInfo(2, false),
-            // Barcode default
-            "BY" to CommandInfo(2, false),
-            // Code 128 - has variants (BCN, BCR)
-            "BC" to CommandInfo(2, false, true),
-            // Font command - has variants (A0N, ABR)
-            "A" to CommandInfo(1, false, true),
-        )
-
-    /**
-     * Command information for efficient lookup
-     */
-    private data class CommandInfo(
-        val minLength: Int,
-        val hasStringData: Boolean,
-        val hasVariants: Boolean = false,
-    )
-
     private val current: Char
         get() = if (position >= input.length) '\u0000' else input[position]
 
@@ -167,7 +128,7 @@ class Lexer(private val input: String) {
         val value = StringBuilder()
 
         // Read base command (usually 2 letters)
-        CommandRecognitionUtils.readBaseCommand(value, { current }, { advance() }, ::isCompleteCommand)
+        CommandRecognitionUtils.readBaseCommand(value, { current }, { advance() }, LexerUtils::isCompleteCommand)
         val baseCommandName = value.toString()
 
         // Read variant characters if supported by this command
@@ -180,18 +141,6 @@ class Lexer(private val input: String) {
         expectingFieldData = CommandRecognitionUtils.updateFieldDataExpectation(finalCommandName, expectingFieldData)
 
         return Token(TokenType.COMMAND, finalCommandName, start, startLine, startColumn)
-    }
-
-    /**
-     * Check if the given string is a complete ZPL command using lookup table
-     */
-    private fun isCompleteCommand(command: String): Boolean {
-        val info = commandInfo[command]
-        return if (info != null) {
-            command.length >= info.minLength
-        } else {
-            command.length >= 2 // Default: most commands are 2 characters
-        }
     }
 
     /**

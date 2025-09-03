@@ -15,7 +15,11 @@ sealed class ZplNode {
 /**
  * Visitor interface for traversing ZPL AST nodes.
  * Implementations can perform operations like printing, validation, or code generation.
+ *
+ * Note: TooManyFunctions is suppressed because visitor pattern requires
+ * one method per AST node type (13 types = 13 methods).
  */
+@Suppress("TooManyFunctions")
 interface ZplNodeVisitor<T> {
     fun visitStartFormatCommand(command: StartFormatCommand): T
 

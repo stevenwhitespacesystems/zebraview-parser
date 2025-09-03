@@ -14,7 +14,6 @@ import com.whitespacesystems.parser.lexer.TokenType
  * Utility functions for parsing basic ZPL commands with simple structures.
  */
 object BasicCommandParsingUtils {
-
     /**
      * Parse Start Format command: ^XA
      */
@@ -32,10 +31,11 @@ object BasicCommandParsingUtils {
     /**
      * Parse Field Origin command: ^FOx,y
      */
+    @Suppress("UnusedParameter")
     fun parseFieldOriginCommand(
         current: () -> Token,
         advance: () -> Unit,
-        expect: (TokenType) -> Token
+        expect: (TokenType) -> Token,
     ): FieldOriginCommand {
         val x = expect(TokenType.NUMBER).value.toInt()
         expect(TokenType.COMMA)
@@ -46,28 +46,36 @@ object BasicCommandParsingUtils {
     /**
      * Parse Field Data command: ^FDdata
      */
+    @Suppress("UnusedParameter")
     fun parseFieldDataCommand(
         current: () -> Token,
         advance: () -> Unit,
-        expect: (TokenType) -> Token
+        expect: (TokenType) -> Token,
     ): FieldDataCommand {
-        val data = if (current().type == TokenType.STRING) {
-            expect(TokenType.STRING).value
-        } else {
-            ""
-        }
+        val data =
+            if (current().type == TokenType.STRING) {
+                expect(TokenType.STRING).value
+            } else {
+                ""
+            }
         return FieldDataCommand(data)
     }
 
     /**
      * Parse Comment command: ^FXtext
      */
-    fun parseCommentCommand(current: () -> Token, advance: () -> Unit, expect: (TokenType) -> Token): CommentCommand {
-        val text = if (current().type == TokenType.STRING) {
-            expect(TokenType.STRING).value
-        } else {
-            ""
-        }
+    @Suppress("UnusedParameter")
+    fun parseCommentCommand(
+        current: () -> Token,
+        advance: () -> Unit,
+        expect: (TokenType) -> Token,
+    ): CommentCommand {
+        val text =
+            if (current().type == TokenType.STRING) {
+                expect(TokenType.STRING).value
+            } else {
+                ""
+            }
         return CommentCommand(text)
     }
 

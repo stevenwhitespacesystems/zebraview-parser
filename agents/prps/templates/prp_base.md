@@ -10,6 +10,47 @@ Template optimized for AI agents to implement features with sufficient context a
 4. **Progressive Success**: Start simple, validate, then enhance
 5. **Global Rules**: Be sure to follow all rules in CLAUDE.md
 6. **STRICT QUALITY GATES**: ALL linting and static analysis must pass - no feature is complete until all checks pass (NO EXCEPTIONS)
+7. **🚨 CONFIGURATION IMMUTABLE**: NEVER modify detekt.yml, ktlint config, or any static analysis configuration files
+8. **🚨 NO SUPPRESSIONS WITHOUT APPROVAL**: NEVER use @Suppress annotations without explicit user approval and documented justification
+
+## 🚨 CRITICAL: Static Analysis Rules (NON-NEGOTIABLE)
+
+### Configuration Files - STRICTLY FORBIDDEN TO MODIFY
+- **NEVER** modify `config/detekt.yml`
+- **NEVER** modify any ktlint configuration 
+- **NEVER** modify `build.gradle.kts` static analysis sections
+- **NEVER** change linting rules, thresholds, or exclusions
+- **NEVER** add ignore patterns or disable rules
+
+### Code Quality Resolution - REQUIRED APPROACH
+- **ALL detekt warnings/errors** must be fixed by changing CODE, not configuration
+- **ALL ktlint formatting issues** must be fixed by changing CODE, not configuration
+- **Fix violations through**: Refactoring, renaming, restructuring, optimization
+- **Permitted quality commands**: `./gradlew ktlintFormat` (auto-fixes code)
+
+### @Suppress Annotation Protocol - EXPLICIT APPROVAL REQUIRED
+If a @Suppress annotation seems necessary:
+
+1. **STOP implementation immediately**
+2. **Document the exact issue**:
+   ```
+   Static Analysis Issue Requiring Suppression:
+   - Rule: [detekt rule name or ktlint rule]
+   - Error message: [exact error text]
+   - Location: [file:line]
+   - Attempted fixes: [what code changes were tried]
+   - Why suppression needed: [detailed justification]
+   ```
+3. **Request explicit user approval** before proceeding
+4. **Wait for confirmation** before adding any @Suppress annotation
+5. **Document suppression reason** in code comment when approved
+
+### Quality Gate Compliance
+- `./gradlew check` MUST pass completely
+- `./gradlew detekt` MUST show zero violations  
+- `./gradlew ktlintCheck` MUST show zero violations
+- Static analysis failures = incomplete implementation
+- **NO exceptions, NO workarounds, NO configuration changes**
 
 ## 🚨 CRITICAL: ALWAYS Include Complete Foundation Section
 **When creating a PRP, you MUST copy the entire "FOUNDATION REFERENCE" section from this template into your PRP. Do NOT leave it blank or summarize it. The Foundation section contains essential architecture patterns, performance optimization guidelines, Kotest testing patterns, and Kotlin coding standards that are critical for proper ZPL parser implementation.**
@@ -181,12 +222,63 @@ Task N+2: UPDATE baseline performance data
 Task FINAL-1: Complete quality gates including performance
   - RUN: ./gradlew check (includes ktlint, detekt, tests)
   - RUN: ./gradlew benchmark (performance validation)
-  - VERIFY: All quality gates pass
+  - VERIFY: All quality gates pass WITHOUT configuration modifications
+  - VERIFY: No @Suppress annotations added without explicit user approval
+  - CONFIRM: Zero static analysis violations through code fixes only
+  - EXECUTE: Final Quality Gate Resolution sequence (see [Final Quality Gate Resolution](#-final-quality-gate-resolution-mandatory-last-steps))
 
 Task FINAL: Integration verification
   - RUN: ./gradlew run (test demo application)
   - VERIFY: New command works in complete parsing workflows
 ```
+
+## 🔴 FINAL QUALITY GATE RESOLUTION (MANDATORY LAST STEPS)
+
+### The Last Thing Before Feature Completion
+**NO feature is considered complete until ALL THREE quality gates pass:**
+
+1. **Fix ALL Linting Issues** (`./gradlew ktlintFormat` then `./gradlew ktlintCheck`)
+2. **Fix ALL Static Analysis Violations** (`./gradlew detekt` - fix through code changes ONLY)  
+3. **Fix ALL Test Failures** (`./gradlew test` - must achieve 100% pass rate)
+
+### Final Validation Sequence
+```bash
+# MANDATORY: Run these commands IN ORDER as the FINAL steps
+# A feature is INCOMPLETE if ANY of these fail
+
+# Step 1: Auto-fix formatting issues
+./gradlew ktlintFormat
+
+# Step 2: Verify all linting passes
+./gradlew ktlintCheck
+# ✅ Must show: BUILD SUCCESSFUL with zero violations
+
+# Step 3: Run static analysis
+./gradlew detekt
+# ✅ Must show: BUILD SUCCESSFUL with zero violations
+
+# Step 4: Run all tests
+./gradlew test
+# ✅ Must show: 100% tests passed (not 99%, not 101/102)
+
+# Step 5: Verify coverage
+./gradlew jacocoTestReport
+# ✅ Must show: ≥80% coverage
+
+# Step 6: Final comprehensive check
+./gradlew check
+# ✅ Must show: BUILD SUCCESSFUL
+
+# ONLY after ALL above pass → Feature is COMPLETE
+```
+
+### If ANY Quality Gate Fails
+- **STOP** - Do not consider feature complete
+- **FIX** - Address violations through code changes only
+- **RERUN** - Execute the full validation sequence again
+- **REPEAT** - Until ALL quality gates pass
+
+**Remember**: A feature with failing quality gates is an INCOMPLETE feature, regardless of functionality.
 
 ## Performance Regression Handling Workflow
 
@@ -468,26 +560,16 @@ throw ParseException(
 
 ### Quality Checks (Run in Order)
 ```bash
-# RECOMMENDED: Single command runs all verification tasks
-./gradlew check                      # Runs ktlint, detekt, tests, coverage - ALL quality gates
+# RECOMMENDED: All-in-one validation
+./gradlew check                      # Runs ktlint, detekt, tests, coverage
 
-# OR: Manual step-by-step approach
-# 1. Code Style & Analysis - Fix ALL errors before proceeding
+# Individual steps if needed
 ./gradlew ktlintFormat               # Auto-fix code formatting
-./gradlew detekt                     # Run static analysis
-
-# 2. Unit & Feature Tests - Must pass with 80%+ coverage
-./gradlew test --tests "*NewFeature*" # Run specific new tests
-./gradlew test                       # Run all tests
-./gradlew jacocoTestReport           # Generate coverage report
-
-# 3. Performance Validation (when applicable)
-./gradlew benchmark                  # Comprehensive performance benchmarks
-./gradlew benchmarkQuick            # Quick benchmark profile for faster feedback
-
-# 4. Build Verification
-./gradlew build                      # Full build verification
-./gradlew run                        # Test demo application
+./gradlew detekt                     # Static analysis
+./gradlew test                       # All tests
+./gradlew jacocoTestReport           # Coverage report
+./gradlew benchmark                  # Performance (when applicable)
+./gradlew build && ./gradlew run     # Build and demo verification
 ```
 
 ### Testing Strategy (Kotest StringSpec Approach)
@@ -501,7 +583,6 @@ throw ParseException(
 ### Lexer Testing Pattern
 ```kotlin
 class NewLexerTest : StringSpec({
-
     "should tokenize new ZPL command" {
         val lexer = Lexer("^NewCommand100,200")
         val tokens = lexer.tokenize()
@@ -509,16 +590,12 @@ class NewLexerTest : StringSpec({
         tokens shouldHaveSize expectedSize
         tokens[0] shouldBe Token(TokenType.CARET, "^", 0)
         tokens[1] shouldBe Token(TokenType.COMMAND, "NewCommand", 1)
-        tokens[2] shouldBe Token(TokenType.NUMBER, "100", 11)
-        // Verify all token types and positions
+        // Verify token types and positions
     }
-
-    "should handle new command with special characters" {
+    
+    "should handle special characters" {
         val lexer = Lexer("^NewCommand$special,data")
-        val tokens = lexer.tokenize()
-        
         // Verify proper handling of special syntax
-        tokens[2] shouldBe Token(TokenType.STRING, "$special,data", expectedPos)
     }
 })
 ```
@@ -526,26 +603,18 @@ class NewLexerTest : StringSpec({
 ### Parser Testing Pattern
 ```kotlin
 class NewCommandTest : StringSpec({
-
     "should parse new command with parameters" {
         val lexer = Lexer("^NewCommand100,200,option")
         val parser = ZplParser(lexer.tokenize())
         val program = parser.parse()
 
-        program.commands.size shouldBe 1
-        val command = program.commands[0]
-        command.shouldBeInstanceOf<NewCommand>()
-        command.param1 shouldBe 100
-        command.param2 shouldBe 200
-        command.option shouldBe "option"
+        program.commands[0].shouldBeInstanceOf<NewCommand>()
+        // Verify parameters
     }
 
     "should throw ParseException for invalid syntax" {
-        val lexer = Lexer("^NewCommandInvalidSyntax")
-        val parser = ZplParser(lexer.tokenize())
-        
         shouldThrow<ParseException> {
-            parser.parse()
+            ZplParser(Lexer("^NewCommandInvalid").tokenize()).parse()
         }.message shouldContain "Expected parameter"
     }
 })
@@ -554,20 +623,12 @@ class NewCommandTest : StringSpec({
 ### End-to-End Testing Pattern
 ```kotlin
 class NewFeatureE2ETest : StringSpec({
-
     "should parse complete ZPL with new command" {
         val zplCode = "^FO100,100^NewCommand200,300^FDTest^FS"
-        val lexer = Lexer(zplCode)
-        val parser = ZplParser(lexer.tokenize())
-        val program = parser.parse()
+        val program = ZplParser(Lexer(zplCode).tokenize()).parse()
 
-        program.commands.size shouldBe 3
         program.commands[1].shouldBeInstanceOf<NewCommand>()
-        
-        // Verify AST printer integration
-        val printer = AstPrinter()
-        val output = printer.print(program)
-        output shouldContain "NewCommand"
+        AstPrinter().print(program) shouldContain "NewCommand"
     }
 })
 ```
@@ -596,20 +657,15 @@ open class NewCommandBenchmarks {
 ### Benchmark Validation Testing Pattern
 ```kotlin
 class BenchmarkSystemTest : StringSpec({
-
-    "should execute benchmarks within performance thresholds" {
-        val benchmarkResult = runBenchmark(NewCommandBenchmarks::class)
-        benchmarkResult.results shouldNotBeEmpty()
-        benchmarkResult.results.forEach { (command, result) ->
-            result.averageTimeNs shouldBeLessThan 1_000_000 // < 1ms threshold
+    "should execute benchmarks within thresholds" {
+        val results = runBenchmark(NewCommandBenchmarks::class)
+        results.forEach { (_, result) ->
+            result.averageTimeNs shouldBeLessThan 1_000_000 // < 1ms
         }
     }
-
+    
     "should detect performance regression" {
-        val currentResults = runBenchmark(NewCommandBenchmarks::class)
-        val baseline = loadBaseline()
-        val comparison = BaselineComparison.compare(currentResults, baseline)
-        
+        val comparison = BaselineComparison.compare(runBenchmark(), loadBaseline())
         if (comparison.hasRegression) {
             println("PERFORMANCE WARNING: ${comparison.regressionDetails}")
         }
@@ -660,14 +716,22 @@ class BenchmarkSystemTest : StringSpec({
 - **Overall minimum**: 80%
 
 ### Final Checklist
+
+#### Prerequisites (MANDATORY BEFORE FEATURE COMPLETION)
+- [ ] **FINAL QUALITY GATE RESOLUTION COMPLETED**: All linting, static analysis, and tests pass (see [Final Quality Gate Resolution](#-final-quality-gate-resolution-mandatory-last-steps))
+  - [ ] `./gradlew ktlintCheck` - Zero violations
+  - [ ] `./gradlew detekt` - Zero violations  
+  - [ ] `./gradlew test` - 100% pass rate (not 99%, not 101/102)
+  - [ ] `./gradlew check` - BUILD SUCCESSFUL
+
+#### Implementation Quality
 - [ ] **TDD Compliance**: RED-GREEN-REFACTOR cycle followed strictly
   - [ ] Tests written FIRST before any implementation
   - [ ] Confirmed RED phase (tests failed initially)
   - [ ] Achieved GREEN phase (minimal implementation passes tests)
   - [ ] Completed REFACTOR phase (optimized without breaking tests)
-- [ ] **Quality Gates Pass**: `./gradlew check` succeeds (includes ktlint, detekt, tests)
+- [ ] **Static Analysis Compliance**: Zero violations, NO configuration modifications, NO @Suppress without approval
 - [ ] **Code Coverage**: 80%+ maintained via `./gradlew jacocoTestReport`
-- [ ] **100% Test Pass Requirement**: ALL tests must pass (not 99%, not 101/102)
 - [ ] **Performance Requirements (MANDATORY for new commands)**:
   - [ ] Performance benchmarks created in `src/benchmark/kotlin/`
   - [ ] Benchmark thresholds met (<0.1ms simple, <1ms complex)

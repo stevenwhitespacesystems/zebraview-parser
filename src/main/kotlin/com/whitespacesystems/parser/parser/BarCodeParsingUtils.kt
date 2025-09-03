@@ -7,7 +7,6 @@ import com.whitespacesystems.parser.lexer.TokenType
  * Utility functions for parsing barcode-specific ZPL commands.
  */
 object BarCodeParsingUtils {
-
     private object Defaults {
         const val BY_DEFAULT_MODULE_WIDTH = 2
         const val BY_DEFAULT_WIDTH_RATIO = 3.0
@@ -17,7 +16,10 @@ object BarCodeParsingUtils {
     /**
      * Parse width ratio parameter which can be NUMBER or STRING token.
      */
-    fun parseBarCodeRatio(current: Token, expect: (TokenType) -> Token): Double {
+    fun parseBarCodeRatio(
+        current: Token,
+        expect: (TokenType) -> Token,
+    ): Double {
         return when (current.type) {
             TokenType.NUMBER -> expect(TokenType.NUMBER).value.toDouble()
             TokenType.STRING -> expect(TokenType.STRING).value.toDouble()

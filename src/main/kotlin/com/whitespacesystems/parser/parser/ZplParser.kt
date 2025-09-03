@@ -188,7 +188,7 @@ class ZplParser(private val tokens: List<Token>) {
             ParameterParsingUtils.parseAdditionalFontParameters(
                 { current },
                 ::advance,
-                ::expect
+                ::expect,
             )?.let { (additionalHeight, additionalWidth) ->
                 additionalHeight?.let { height = it }
                 additionalWidth?.let { width = it }
@@ -260,11 +260,12 @@ class ZplParser(private val tokens: List<Token>) {
             moduleWidth = expect(TokenType.NUMBER).value.toInt()
 
             // Parse optional width ratio and height parameters
-            val (parsedRatio, parsedHeight) = BarCodeParsingUtils.parseBarCodeRatioAndHeight(
-                { current },
-                ::advance,
-                ::expect
-            )
+            val (parsedRatio, parsedHeight) =
+                BarCodeParsingUtils.parseBarCodeRatioAndHeight(
+                    { current },
+                    ::advance,
+                    ::expect,
+                )
             widthRatio = parsedRatio
             height = parsedHeight
         }
@@ -296,12 +297,18 @@ class ZplParser(private val tokens: List<Token>) {
         height = ParameterParsingUtils.parseOptionalNumberParameter({ current }, ::advance, ::expect)
 
         // Parse print interpretation flag
-        printInterpretation = ParameterParsingUtils.parseOptionalBooleanParameter(printInterpretation, { current }, ::advance)
+        printInterpretation =
+            ParameterParsingUtils.parseOptionalBooleanParameter(
+                printInterpretation,
+                { current },
+                ::advance,
+            )
 
         // Parse print interpretation above flag
-        printInterpretationAbove = ParameterParsingUtils.parseOptionalBooleanParameter(printInterpretationAbove, {
-            current
-        }, ::advance)
+        printInterpretationAbove =
+            ParameterParsingUtils.parseOptionalBooleanParameter(printInterpretationAbove, {
+                current
+            }, ::advance)
 
         // Parse UCC check digit flag
         uccCheckDigit = ParameterParsingUtils.parseOptionalBooleanParameter(uccCheckDigit, { current }, ::advance)

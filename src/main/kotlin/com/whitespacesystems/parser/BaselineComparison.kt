@@ -223,7 +223,8 @@ object BaselineComparison {
     ): ComparisonResult {
         val performanceDelta =
             if (baseline != null) {
-                ((current.averageTimeNs - baseline.averageTimeNs) / baseline.averageTimeNs) * AnalysisConstants.PERCENTAGE_CONVERSION
+                val deltaRatio = (current.averageTimeNs - baseline.averageTimeNs) / baseline.averageTimeNs
+                deltaRatio * AnalysisConstants.PERCENTAGE_CONVERSION
             } else {
                 0.0
             }

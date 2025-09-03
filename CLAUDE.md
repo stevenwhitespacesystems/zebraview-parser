@@ -2,6 +2,34 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 📋 AI Agent Quick Reference
+
+### Common Tasks
+- **Add new ZPL command**: AST Node → Parser Logic → Registry → Visitor → Tests → Benchmarks (8 steps) → See [Adding New ZPL Commands](#adding-new-zpl-commands)
+- **Performance check**: `./gradlew benchmark` → Check BaselineComparison warnings → See [Performance Benchmarking](#performance-benchmarking-requirements)
+- **Quality gates**: `./gradlew check` (runs ktlint + detekt + tests + coverage)
+- **Emergency performance regression**: Stop current work → Create regression fix PRP → See [Performance Regression Detection](#performance-regression-detection--resolution)
+
+### Critical Parsing Patterns (MUST Follow)
+- **Field data precedence**: `expectingFieldData` check MUST come before `current.isDigit()` in lexer
+- **Dynamic characters**: Never hardcode `'^'`, `'~'`, `','` - use `caretChar`, `tildeChar`, `delimiterChar` variables
+- **O(1) command lookup**: Use HashMap-based command recognition, avoid sequential checks
+- **Context-aware parsing**: Handle field data mode vs command mode correctly
+- **TDD mandatory**: Write tests FIRST, confirm RED phase, achieve GREEN, then REFACTOR
+
+### Performance Thresholds
+- **Simple commands** (`^XA`, `^XZ`): < 0.1ms (100,000ns)  
+- **Complex commands** (`^FO`, `^FD`, `^A`): < 1ms (1,000,000ns)
+- **Coverage minimum**: 80% (non-negotiable)
+- **Regression threshold**: >10% degradation triggers warnings
+
+### Emergency Procedures
+- **Test failures**: No feature complete until 100% pass rate + 80% coverage
+- **Performance regression**: STOP → Document → Create fix PRP → Execute before completing original feature
+- **Static analysis errors**: Fix code, NOT configuration files - no @Suppress without approval
+
+---
+
 ## 🎯 Project Overview
 
 **ZebraView Parser** - High-performance ZPL (Zebra Programming Language) parser and AST generator written in Kotlin. Converts ZPL commands into structured Abstract Syntax Trees for label analysis and manipulation.
@@ -34,6 +62,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Code quality**: Run ktlint + detekt before committing
 - **Documentation**: Reference `data/zpl/` for ZPL command specifications
 
+## 🚀 Performance Requirements & Benchmarking
+
+### Performance is Paramount
+- **High-performance parsing**: Parser must handle large ZPL files efficiently
+- **Memory efficiency**: Minimize object allocations during parsing
+- **Single-pass parsing**: Avoid multiple passes over input where possible
+- **Lazy evaluation**: Use sequences and lazy collections for token processing
+- **Context-aware parsing**: Field data (^FD) vs command parsing modes
+
 ### Performance Optimization Guidelines
 - **Avoid string concatenation** in hot paths - use StringBuilder
 - **Reuse objects** where possible - consider object pooling for tokens
@@ -44,6 +81,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Monitor performance regression** - >10% degradation triggers warnings in CI/CD
 - **Optimize token precedence** - Critical parsing checks (like field data mode) must come before general checks
 
+### Performance Benchmarking Requirements
+- **Benchmark Coverage**: All new ZPL commands must have performance benchmarks
+- **Performance Thresholds**: Simple commands <0.1ms, complex commands <1ms
+- **Memory Efficiency**: Minimize object allocation per parsing operation
+- **Regression Detection**: >10% performance degradation triggers warnings
+- **Benchmark Integration**: Use kotlinx-benchmark for JVM performance measurement
+- **Validation Gates**: Include `./gradlew benchmark` in quality checks when applicable
+
+### Benchmarking Commands
+```bash
+# COMPREHENSIVE BENCHMARKING - Measure all aspects of ZPL parser performance
+./gradlew benchmark                # Run complete performance benchmark suite
+./gradlew benchmarkQuick          # Quick command benchmark profile (faster feedback)
+./gradlew generateBenchmarkReport # Generate HTML performance reports
+
+# Performance validation integrated with quality gates (non-blocking)
+./gradlew check                   # Includes benchmark validation warnings
+```
+
+### Performance Regression Detection & Resolution
+
+When implementing ANY new feature or command, follow this systematic approach:
+
+#### 1. Pre-Implementation Baseline
+```bash
+./gradlew benchmark
+# Record baseline performance for comparison
+```
+
+#### 2. Post-Implementation Validation
+```bash
+./gradlew benchmark
+# Check BaselineComparison output for regression warnings
+```
+
+#### 3. If Regression Detected (>10% degradation)
+**IMMEDIATE ACTIONS:**
+- **Document regression details**: Affected command(s), performance change, likely cause
+- **Create regression fix PRP**: Generate focused PRP for performance restoration
+- **Execute fix BEFORE considering original feature complete**
+
+**Performance Regression Policy:**
+- >10% degradation triggers mandatory fix PRP
+- No feature is complete until performance is restored
+- Regressions must be fixed before original PRP completion
+- All fixes must be validated with benchmarks
+
 ## 🏗️ Architecture
 
 The parser follows a classic lexer → parser → AST architecture optimized for ZPL parsing:
@@ -51,25 +135,40 @@ The parser follows a classic lexer → parser → AST architecture optimized for
 ### Core Components
 
 **Lexer** (`src/main/kotlin/com/whitespacesystems/parser/lexer/`)
-- `Lexer.kt` - Tokenizes ZPL strings into tokens for parsing
+- `Lexer.kt` - High-performance tokenizer with context-aware parsing
 - `Token.kt` - Token types and data structures
+- `LexerUtils.kt` - Lexical analysis utility functions
+- `CommandRecognitionUtils.kt` - O(1) command lookup optimization
 - Handles ZPL-specific syntax: `^` commands, `~` control commands, comma-separated parameters
 - Context-aware parsing (field data mode after `^FD` commands)
 - **Dynamic Character Tracking** - Supports changeable format characters via CC/CD/CT commands
 
 **Parser** (`src/main/kotlin/com/whitespacesystems/parser/parser/`)
-- `ZplParser.kt` - Recursive descent parser that converts tokens to AST
-- Follows grammar: `Program → Command*` where commands are `^FO`, `^FD`, `^A` variants
-- Throws `ParseException` for syntax errors
+- `ZplParser.kt` - Main recursive descent parser that converts tokens to AST
+- Modular parsing utilities: `BasicCommandParsingUtils.kt`, `ParameterParsingUtils.kt`, `BarCodeParsingUtils.kt`
+- `CommandParserRegistry.kt` - Extensible command parser registration system
+- Follows grammar: `Program → Command*` with support for all ZPL command types
+- Throws `ParseException` for syntax errors with position information
 
 **AST** (`src/main/kotlin/com/whitespacesystems/parser/ast/`)
 - `ZplNode.kt` - Base sealed class with visitor pattern support
 - `ZplProgram.kt` - Root AST node containing command list
-- Command nodes: `FieldOriginCommand.kt` (`^FO`), `FieldDataCommand.kt` (`^FD`), `FontCommand.kt` (`^A`)
+- Command nodes: Sealed class hierarchy for all supported ZPL commands
 - Visitor pattern enables extensible AST operations
 
-**Utilities**
-- `AstPrinter.kt` - Formats AST for debugging and visualization
+**Utilities** (`src/main/kotlin/com/whitespacesystems/parser/utils/`)
+- `AstPrinter.kt` - Main AST visualization and debugging
+- `AstPrinterVisitorImpl.kt` - Visitor implementation for printing
+- `AstPrinterUtils.kt` - Additional printing utilities
+
+**Performance & Benchmarking**
+- `BaselineComparison.kt` - Performance regression detection system
+- Comprehensive benchmarking in `src/benchmark/kotlin/` directory
+- See [Performance Requirements & Benchmarking](#-performance-requirements--benchmarking) section
+
+**Demo Infrastructure** (`src/main/kotlin/com/whitespacesystems/parser/demo/`)
+- `DemoRunner.kt` - Interactive demo with multiple ZPL parsing scenarios
+- `PerformanceReporterUtils.kt` - Performance demonstration and reporting
 
 **Data Directory**
 `data/zpl/` contains ZPL command reference documentation (*.md files) - comprehensive ZPL command specifications for future parser extensions.
@@ -170,119 +269,9 @@ when (commandName) {
 ./gradlew jacocoTestReport         # Generate coverage report (80% minimum)
 ```
 
-### Performance Benchmarking System
-```bash
-# COMPREHENSIVE BENCHMARKING - Measure all aspects of ZPL parser performance
-./gradlew benchmark                # Run complete performance benchmark suite
-./gradlew benchmarkQuick          # Quick command benchmark profile (faster feedback)
-./gradlew generateBenchmarkReport # Generate HTML performance reports
+### Development Commands
 
-# Performance validation integrated with quality gates (non-blocking)
-./gradlew check                   # Includes benchmark validation warnings
-```
-
-#### Benchmark Categories
-- **Command Benchmarks**: Individual ZPL command performance (^XA, ^XZ, ^FO, ^FD, ^A)
-- **E2E Benchmarks**: Complete ZPL label parsing workflows (simple to complex labels)
-- **Memory Benchmarks**: Memory allocation patterns and GC overhead measurement
-
-#### Performance Thresholds & Regression Detection
-```bash
-# Performance targets
-# Simple commands (^XA, ^XZ): <0.1ms (100,000ns) average execution time
-# Complex commands (^FO, ^FD, ^A): <1ms (1,000,000ns) average execution time  
-# Memory allocation: Minimal object creation per parsing operation
-# Regression threshold: >10% performance degradation triggers warnings
-
-# Performance reports and baseline management
-# Reports generated in: build/reports/benchmarks/
-# Baseline storage: baseline.json
-# Historical tracking: Automatic performance trend analysis
-```
-
-#### Benchmark Infrastructure Files
-```
-src/benchmark/kotlin/com/whitespacesystems/parser/
-├── CommandBenchmarks.kt          # Individual ZPL command benchmarks
-├── E2EBenchmarks.kt             # Complete label parsing workflows  
-├── MemoryBenchmarks.kt          # Memory allocation measurement
-├── BaselineComparison.kt        # Performance regression detection
-└── data/
-    └── BenchmarkData.kt         # Test data generators for benchmarks
-
-baseline.json                       # Performance baseline storage (root level)
-```
-
-#### Using the Benchmarking System
-```bash
-# 1. Run benchmarks and establish baseline
-./gradlew benchmark
-
-# 2. Generate performance reports
-./gradlew generateBenchmarkReport
-open build/reports/benchmarks/index.html
-
-# 3. Compare with baselines (automatic regression detection)
-# Warnings appear in build output for >10% performance degradation
-
-# 4. Update baselines when performance improvements are made
-# Baselines are automatically updated and stored with historical data
-```
-
-#### Performance Optimization Workflow
-1. **Profile regularly**: Run `./gradlew benchmark` during development
-2. **Monitor regressions**: Check benchmark warnings in CI/CD pipeline  
-3. **Analyze bottlenecks**: Review HTML reports and JSON benchmark data
-4. **Validate optimizations**: Compare before/after performance with baseline system
-5. **Maintain baselines**: Historical performance tracking for trend analysis
-
-### Performance Regression Detection & Resolution
-
-When implementing ANY new feature or command, follow this systematic approach to prevent and fix performance regressions:
-
-#### 1. Pre-Implementation Baseline
-```bash
-./gradlew benchmark
-# Record baseline performance for comparison
-```
-
-#### 2. Post-Implementation Validation
-```bash
-./gradlew benchmark
-# Check BaselineComparison output for regression warnings
-```
-
-#### 3. If Regression Detected (>10% degradation)
-
-**IMMEDIATE ACTIONS:**
-- **Document regression details**:
-  ```
-  Affected command(s): [names]
-  Performance change: [baseline] → [current] ([X%] slower)
-  Likely cause: [recent changes]
-  ```
-- **Create regression fix PRP**:
-  - Use `/prep-prp` with regression context
-  - Generate focused PRP for performance restoration
-  - Execute fix BEFORE considering original feature complete
-
-**REGRESSION FIX PROCESS:**
-1. **Root cause analysis**: Profile affected code paths
-2. **Optimization**: Apply performance optimization guidelines
-3. **Validation**: Re-run benchmarks to confirm fix
-4. **Baseline update**: Update baseline.json with verified measurements
-
-#### 4. Update Baseline (when performance improves)
-```bash
-# After confirming performance is acceptable or improved
-# BaselineComparison utilities update baseline.json automatically
-```
-
-**Performance Regression Policy:**
-- >10% degradation triggers mandatory fix PRP
-- No feature is complete until performance is restored
-- Regressions must be fixed before original PRP completion
-- All fixes must be validated with benchmarks
+See [Performance Requirements & Benchmarking](#-performance-requirements--benchmarking) section for detailed performance workflows and regression handling.
 
 ### Advanced Commands
 ```bash
@@ -296,47 +285,21 @@ When implementing ANY new feature or command, follow this systematic approach to
 
 ## 📁 File Organization
 
-### Project Structure
-```
-src/
-├── main/kotlin/com/whitespacesystems/parser/
-│   ├── Main.kt                           # Demo application entry point
-│   ├── ast/                              # AST node definitions
-│   │   ├── ZplNode.kt                   # Base sealed class
-│   │   ├── ZplProgram.kt                # Root AST node
-│   │   ├── FieldOriginCommand.kt        # ^FO command node
-│   │   ├── FieldDataCommand.kt          # ^FD command node
-│   │   └── FontCommand.kt               # ^A command variants
-│   ├── lexer/                           # Lexical analysis
-│   │   ├── Lexer.kt                     # Main tokenizer
-│   │   └── Token.kt                     # Token definitions
-│   ├── parser/                          # Syntax analysis
-│   │   └── ZplParser.kt                 # Recursive descent parser
-│   └── utils/                           # Utilities
-│       └── AstPrinter.kt               # AST debugging output
-├── benchmark/kotlin/com/whitespacesystems/parser/  # Performance benchmarks
-│   ├── CommandBenchmarks.kt             # Individual command benchmarks
-│   ├── E2EBenchmarks.kt                # End-to-end parsing benchmarks
-│   ├── MemoryBenchmarks.kt             # Memory allocation benchmarks
-│   ├── BaselineComparison.kt           # Performance regression detection
-│   └── data/
-│       └── BenchmarkData.kt            # Benchmark test data generators
-└── test/kotlin/com/whitespacesystems/parser/
-    ├── ErrorHandlingTest.kt             # Parser error scenarios
-    ├── lexer/
-    │   └── LexerTest.kt                 # Tokenizer tests
-    ├── parser/                          # Parser component tests
-    │   ├── FieldDataCommandTest.kt
-    │   ├── FieldOriginCommandTest.kt
-    │   ├── FontCommandTest.kt
-    │   └── ZplParserE2ETest.kt          # End-to-end workflows
-    ├── benchmark/                       # Benchmark infrastructure tests
-    │   └── BenchmarkSystemTest.kt       # Benchmark system validation
-    └── utils/
-        └── AstPrinterTest.kt            # Utility tests
+For detailed component structure, see the [Architecture](#-architecture) section which covers:
+- **Lexer components** with utilities and command recognition
+- **Parser components** with modular parsing utilities  
+- **AST nodes** with sealed class hierarchy
+- **Performance & Benchmarking infrastructure**
+- **Demo and utility components**
 
-baseline.json                            # Performance baseline data (root level)
-```
+### Test Organization
+- **Unit Tests**: Component-specific functionality (LexerTest, individual command tests)
+- **Integration Tests**: Multi-component workflows (ZplParserE2ETest)  
+- **Error Tests**: Exception and error handling (ErrorHandlingTest)
+- **Utility Tests**: Helper function testing (AstPrinterTest)
+- **Benchmark Tests**: Performance validation and benchmark system tests
+
+Test file naming: `[ComponentName]Test.kt`
 
 ### File Naming Conventions
 - **Source Files**: PascalCase with descriptive names (`FieldOriginCommand.kt`)
@@ -345,11 +308,13 @@ baseline.json                            # Performance baseline data (root level
 
 ### Adding New ZPL Commands
 1. **AST Node**: Create sealed class extending `ZplNode` in `ast/`
-2. **Parser Logic**: Add command parsing in `ZplParser.kt`
-3. **Tests**: Create comprehensive test file in `parser/`
-4. **Benchmarks**: Create performance benchmarks in `src/benchmark/kotlin/`
-5. **Regression Check**: Validate no performance degradation in existing commands
-6. **Baseline Update**: Update baseline.json if performance improved
+2. **Parser Logic**: Add command parsing in `ZplParser.kt` or create dedicated parsing utils
+3. **Parser Registration**: Register command in `CommandParserRegistry.kt` if using modular approach
+4. **Visitor Pattern**: Update `ZplNodeVisitor<T>` interface with new visit method
+5. **Tests**: Create comprehensive test file in `parser/` following Kotest StringSpec pattern
+6. **Benchmarks**: Create performance benchmarks in `src/benchmark/kotlin/`
+7. **Regression Check**: Validate no performance degradation in existing commands
+8. **Baseline Update**: Update baseline.json if performance improved
 
 ## 📋 Code Standards
 

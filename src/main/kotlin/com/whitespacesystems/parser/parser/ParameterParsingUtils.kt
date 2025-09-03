@@ -7,11 +7,14 @@ import com.whitespacesystems.parser.lexer.TokenType
  * Utility functions for parsing optional parameters in ZPL commands.
  */
 object ParameterParsingUtils {
-
     /**
      * Parse optional number parameter after a comma.
      */
-    fun parseOptionalNumberParameter(current: () -> Token, advance: () -> Unit, expect: (TokenType) -> Token): Int? {
+    fun parseOptionalNumberParameter(
+        current: () -> Token,
+        advance: () -> Unit,
+        expect: (TokenType) -> Token,
+    ): Int? {
         return if (current().type == TokenType.COMMA) {
             advance()
             if (current().type == TokenType.NUMBER) {
@@ -49,7 +52,11 @@ object ParameterParsingUtils {
     /**
      * Parse optional width parameter after a comma.
      */
-    fun parseOptionalWidthParameter(current: () -> Token, advance: () -> Unit, expect: (TokenType) -> Token): Int? {
+    fun parseOptionalWidthParameter(
+        current: () -> Token,
+        advance: () -> Unit,
+        expect: (TokenType) -> Token,
+    ): Int? {
         return if (current().type == TokenType.COMMA) {
             advance()
             if (current().type == TokenType.NUMBER) {
