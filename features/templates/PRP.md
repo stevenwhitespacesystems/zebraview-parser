@@ -1,365 +1,595 @@
-# PRP Template - AI Implementation Guide
+# PRP Template
 
-## Purpose
-Streamlined template optimized for AI agents to implement features with comprehensive context and self-validation capabilities.
-
-## Core Principles
-1. **Context is King**: Include ALL necessary documentation, examples, and caveats
-2. **Validation Loops**: Provide executable tests/lints the AI can run and fix
-3. **Information Dense**: Use keywords and patterns from the codebase
-4. **Progressive Success**: Start simple, validate, then enhance
-5. **Global Rules**: Be sure to follow all rules in CLAUDE.md
-6. **STRICT QUALITY GATES**: ALL linting and static analysis must pass - no feature is complete until all checks pass (NO EXCEPTIONS)
-7. **🚨 CONFIGURATION IMMUTABLE**: NEVER modify detekt.yml, ktlint config, or any static analysis configuration files
-8. **🚨 NO SUPPRESSIONS WITHOUT APPROVAL**: NEVER use @Suppress annotations without explicit user approval and documented justification
-
-## 🚨 CRITICAL: Foundation Requirements
-**This PRP includes comprehensive foundation materials. See the following sections for complete details:**
-- [Quality Gates & Validation](sections/quality-gates.md)
-- [Foundation Reference](sections/foundation.md)
-- [TDD Workflow](sections/tdd-workflow.md)
-- [Performance Requirements](sections/performance.md)
-- [Lexer Patterns](sections/patterns/lexer.md)
-- [Parser Patterns](sections/patterns/parser.md)
-- [AST Patterns](sections/patterns/ast.md)
+## Quick Example: ^FO Command
+<!-- EXAMPLE - Shows agents exactly what to produce -->
+Given research: ^FO sets field origin with X,Y,Z parameters
+This template produces:
+- AST: `data class FieldOriginCommand(val x: Int, val y: Int?, val z: Int = 0)`
+- Test: `"should parse ^FO10,20,0" { ... }`
+- Parser: `private fun parseFieldOrigin(): FieldOriginCommand { ... }`
+Complete example helps agents understand expectations.
 
 ---
 
-# PRP CREATION TEMPLATE
+## 1. Feature Summary
+<!-- GENERATOR INSTRUCTIONS:
+Source: features/[feature-id]/agents/zpl-command-researcher/findings.md
+Extract from "Command Overview" and "Implementation Analysis" sections:
+- Command: The ZPL command notation (e.g., ^BC, ^FO)
+- Purpose: One-sentence from "Purpose" in findings
+- Complexity: Rating from "Parsing Complexity" with brief reason
+- Affects: Optional - only if command interacts with other systems
+-->
 
-## Goal
-[What needs to be built - be specific about the end state and desires]
+Command: [^XX notation]
+Purpose: [One-line description from research findings]
+Complexity: [Simple/Medium/Complex] ([brief 3-5 word reason])
+Affects: [Optional - what this impacts in the system]
 
-## Why
-- [Business value and user impact]
-- [Integration with existing features]
-- [Problems this solves and for whom]
+## 2. Command Specification
+<!-- GENERATOR INSTRUCTIONS:
+Source: features/[feature-id]/agents/zpl-command-researcher/findings.md
+Extract from "Technical Specifications" section:
+1. ZPL Format - exact syntax from findings
+2. Parameters table - all parameters with details
+3. Field Data Requirements - ONLY if mentioned in findings
+4. Mode Complexity - ONLY if command has modes
+5. Validation Rules - ONLY if special validation mentioned
+-->
 
-## What
-[User-visible behavior and technical requirements]
-
-### Success Criteria
-- [ ] [Specific measurable outcomes]
-
-## Context & Documentation
-
-### Required Reading
-```yaml
-# MUST READ - Include these in your context window
-- file: [path/to/relevant/file.kt]
-  why: [Pattern to follow, gotchas to avoid]
-  
-- file: [path/to/test/example.kt]
-  why: [Testing patterns and structure to follow]
-  
-- doc: [External documentation URL if needed] 
-  section: [Specific section about implementation details]
-  critical: [Key insight that prevents common errors]
+### Syntax
+```
+[Exact ZPL format from "ZPL Format" in findings]
 ```
 
-### Current Codebase Structure
-```bash
-# Run `tree` in the root of the project to get overview
-```
+### Parameters
+[Copy parameter table directly from "Parameters" section in findings]
 
-### Desired Structure
-```bash
-# Show files to be added and responsibility of each file
-```
+### Field Data Requirements
+<!-- Include ONLY if "Field Data Requirements" exists in findings -->
+[Copy field data requirements from findings]
 
-### Known Codebase Patterns & Gotchas
+### Modes
+<!-- Include ONLY if "Mode Complexity" exists in findings -->
+[Copy mode descriptions from findings]
+
+### Validation Rules
+<!-- Include ONLY if findings mention special validation, constraints, or calculations -->
+[List any special validation requirements, parameter interactions, or constraints]
+
+## 3. Dependencies & Prerequisites
+<!-- GENERATOR INSTRUCTIONS:
+Extract from research "Dependencies" or "Architecture Impact" sections
+Check codebase for actual dependencies
+-->
+
+### Required Prior Implementations
+- [ ] List commands that must exist first
+- [ ] Check: Are these already in codebase?
+
+### Shared Utilities
+- [ ] Check CommandParsingUtils for existing helpers
+- [ ] List any new utilities needed
+
+## 4. Implementation Design
+<!-- GENERATOR INSTRUCTIONS:
+Primary source: features/[feature-id]/agents/zpl-command-researcher/findings.md
+Secondary verification: Check actual codebase patterns
+
+Steps:
+1. Start with "Suggested AST Node Structure" from findings
+2. VERIFY by checking similar commands in src/main/kotlin/.../ast/
+3. ADAPT the structure to match actual codebase patterns
+4. CHECK if utility functions already exist before creating new ones
+-->
+
+### AST Node Structure
 ```kotlin
-// CRITICAL: Project-specific patterns from ZPL parser codebase
+[Adapt from findings "Suggested AST Node Structure"]
+[VERIFY against existing commands like FieldOriginCommand.kt, BCCommand.kt]
+[ENSURE: extends ZplNode, includes visitor pattern, follows project conventions]
+```
 
-// 1. CRITICAL TOKEN PRECEDENCE - expectingFieldData MUST come first
-// Bug fix: Field data starting with digits was incorrectly tokenized
-when {
-    expectingFieldData -> {
-        // MUST be first priority - field data reads everything as string
-        readString(start, startLine, startColumn)
+### Parser Integration
+```kotlin
+// VERIFY exact patterns by checking ZplParser.kt
+private fun parse[CommandName](): [CommandName]Command {
+    // Check similar commands in ZplParser for parameter parsing patterns
+}
+
+// VERIFY commandInfo structure in Lexer.kt before adding
+"[XX]" to CommandInfo([length], [hasFieldData], [hasVariants])
+```
+
+### Integration Points
+<!-- CHECK codebase for these files and their current structure -->
+| File | Action | Purpose |
+|------|--------|---------|
+| `ast/[CommandName]Command.kt` | Create | AST node implementation |
+| `parser/ZplParser.kt` | Update | Add parse[CommandName]() method |
+| `lexer/Lexer.kt` | Update | Register in commandInfo map |
+| `ast/ZplNodeVisitor.kt` | Update | Add visit() signature |
+| `utils/AstPrinterVisitorImpl.kt` | Update | Implement visitor |
+| `parser/[CommandName]ParsingUtils.kt` | Create if needed | Only if complex parsing logic |
+
+### Implementation Notes
+<!-- EXTRACT from findings but VERIFY against codebase -->
+- [Special parsing considerations from findings]
+- [Check if similar patterns already exist in codebase]
+- [Note any deviations from findings based on actual code]
+
+### Utility Functions
+<!-- FIRST check if these already exist in CommandParsingUtils.kt or similar -->
+<!-- Only create new utilities if truly needed -->
+[List required utilities, noting if they already exist or need creation]
+
+## 5. Test Scenarios
+<!-- GENERATOR INSTRUCTIONS:
+Primary source: features/[feature-id]/agents/zpl-command-researcher/findings.md - "Test Scenarios" section
+Secondary: Verify test patterns in src/test/kotlin/.../parser/
+
+CRITICAL: These tests are written FIRST in TDD workflow (before implementation)
+Process:
+1. Copy test examples from findings
+2. CHECK existing test files for Kotest StringSpec format and naming patterns
+3. ENSURE tests follow project patterns (descriptive names, proper assertions)
+4. ORGANIZE by complexity: basic → edge cases → errors → integration
+5. TARGET: 80% code coverage minimum
+-->
+
+### Test Implementation
+```kotlin
+// Test file: src/test/kotlin/com/whitespacesystems/parser/parser/[CommandName]Test.kt
+// VERIFY: Use Kotest StringSpec format as seen in existing tests
+// NAMING: Use descriptive test names that explain the behavior being tested
+
+class [CommandName]Test : StringSpec({
+    // Tests are written FIRST - they will initially FAIL (RED phase)
+    
+    "should parse minimal [command] command" { }
+    "should parse [command] with all parameters" { }
+    "should handle field data in [command]" { }  // if applicable
+    "should reject invalid [parameter]" { }
+})
+```
+
+### Basic Functionality
+```kotlin
+// Copy from findings "Basic Usage Tests" section
+// Minimal command usage
+"^XA^[COMMAND][minimal params]^XZ"
+
+// Full parameters
+"^XA^[COMMAND][all params]^FD[data]^FS^XZ"
+
+// Common variations
+[2-3 more examples from findings]
+```
+
+### Edge Cases
+<!-- Extract from findings "Edge Cases" section -->
+- [Boundary values - min/max parameters]
+- [Empty or missing optional parameters]
+- [Special characters in field data if applicable]
+- [Maximum length values]
+
+### Error Scenarios
+<!-- Extract from findings "Edge Cases" or error handling -->
+- [Invalid parameter values]
+- [Missing required parameters]
+- [Malformed syntax]
+- [Invalid combinations from validation rules]
+
+### Integration Tests
+<!-- Extract from findings "Integration Tests" section -->
+- [Command interaction with ^BY if barcode-related]
+- [Position inheritance from ^FO]
+- [Orientation effects from ^FW]
+- [Multiple commands in single label]
+
+### Property-Based Tests
+<!-- Include for complex commands with many parameter combinations -->
+```kotlin
+// If command has complex parameter interactions
+"should handle all valid parameter combinations" {
+    checkAll(/* generators for valid params */) { params ->
+        // Test with generated values
     }
-    current.isDigit() -> readNumber(start, startLine, startColumn)  // After field data check
-    current.isLetter() -> readCommand(start, startLine, startColumn)
 }
-// Bug example: "^FD123 Main St" was tokenized as NUMBER("123") + STRING(" Main St")
-// Fixed by prioritizing expectingFieldData check
-
-// 2. Dynamic Character Support - Never hardcode ZPL characters
-// From Lexer.kt: Support for CC/CD/CT commands that change syntax characters
-private var caretChar: Char = '^'      // Format command prefix (changed by ^CC)
-private var tildeChar: Char = '~'      // Control command prefix (changed by ^CT)
-private var delimiterChar: Char = ','  // Parameter delimiter (changed by ^CD)
-// Always use these variables instead of hardcoded '^', '~', ','
-
-// 3. Command Lookup Optimization - O(1) command recognition
-// From Lexer.kt: HashMap for performance instead of sequential checks
-private val commandInfo = hashMapOf(
-    "FD" to CommandInfo(2, true),           // Field data - has string data
-    "CF" to CommandInfo(2, false, true),    // Change font - has variants (CFB, CF0)
-    "BC" to CommandInfo(2, false, true)     // Code 128 - has variants (BCR, BCN)
-)
-
-// 4. Command Variant Handling - Embedded parameters in command tokens
-// From ZplParser.kt: Commands like CFB, BCR, A0N have variants in the token itself
-if (commandToken.value.length > 2) {
-    font = commandToken.value[2]  // Extract 'B' from "CFB" command
-}
-
-// 5. Sealed class hierarchy for type-safe AST nodes
-// From ZplNode.kt: All command nodes extend sealed class
-sealed class ZplNode {
-    abstract fun <T> accept(visitor: ZplNodeVisitor<T>): T
-}
-
-// 6. Parser error handling with position information
-// From ZplParser.kt: All exceptions include token position
-throw ParseException("Expected coordinate parameter", token.position)
-
-// 7. Context-aware lexing - Field data vs command parsing modes
-// From Lexer.kt: Field data mode after ^FD commands treats everything as string until next ^
-expectingFieldData = (finalCommandName == "FD") || (finalCommandName == "FX")
-
-// 8. Performance-critical parsing - avoid object allocations in loops
-// Use StringBuilder for string building, reuse collections where possible
 ```
 
-## Implementation Blueprint
-
-### Data Models
+### Performance Benchmarks
+<!-- For commands marked as Complex or performance-critical -->
 ```kotlin
-// Core AST nodes with sealed class hierarchy and visitor pattern needed
+// Benchmark file: src/benchmark/kotlin/.../[CommandName]Benchmarks.kt
+// Target: Simple commands <0.1ms, Complex commands <1ms
+@State(Scope.Benchmark)
+class [CommandName]Benchmarks {
+    @Benchmark
+    fun parse[CommandName]() { }
+}
 ```
 
-### Task List (in execution order)
+### Coverage Requirements
+- Minimum: 80% code coverage
+- All error paths must be tested
+- All parameter combinations should be covered
+
+## 6. Task Breakdown
+<!-- GENERATOR INSTRUCTIONS:
+Create tasks following TDD workflow with agent assignments
+Mark tasks that can run in PARALLEL with [P] prefix
+Sequential tasks with [S] prefix
+Each task should specify which agent type is best suited
+
+Agent Types:
+- general-purpose: Complex multi-step tasks, searches, research
+- code-writer: File creation, implementation, code modifications
+- test-runner: Running tests, validation, benchmarks
+- reviewer: Code review, quality checks
+-->
+
+### Execution State Management
+<!-- CRITICAL: Single source of truth -->
+State file: `features/[feature-id]/agents/state.json`
+```json
+{
+  "current_phase": "[1|2|3]",
+  "current_iteration": 0,
+  "max_iterations": 50,
+  "phase_2_parallel": {
+    "ast_node": "pending|in_progress|complete",
+    "visitor_interface": "pending|in_progress|complete",
+    "visitor_impl": "pending|in_progress|complete"
+  },
+  "validation_loop": {
+    "iteration": 0,
+    "last_failure": "none",
+    "fixes_applied": []
+  }
+}
+```
+All agents MUST update this atomically.
+
+### Phase 1: Test Creation (RED Phase)
+**[S] Task 1.1: Create Test File** @code-writer
+- Create: `src/test/kotlin/.../parser/[CommandName]Test.kt`
+- Output: `features/[feature-id]/agents/phase-1/tests-created.md`
+- Context format:
+  ```markdown
+  ## Tests Created
+  - [ ] Test file created: [CommandName]Test.kt
+  - [ ] Basic functionality tests (X tests)
+  - [ ] Edge case tests (Y tests)
+  - [ ] Error scenario tests (Z tests)
+  ```
+
+**[S] Task 1.2: Confirm RED** @test-runner  
+- Run: `./gradlew test --tests "*[CommandName]Test"`
+- Output: `features/[feature-id]/agents/phase-1/red-confirmation.md`
+- Context format:
+  ```markdown
+  ## RED Phase Confirmation
+  - [x] All tests failing as expected
+  - Total tests: X
+  - All failing: ✓
+  ```
+
+### Phase 2: Initial Implementation (Parallel Work)
+**[P] Task 2.1: Create AST Node** @code-writer
+- Create: `src/main/kotlin/.../ast/[CommandName]Command.kt`
+- From: Section 3 AST Node Structure
+- Output: `features/[feature-id]/agents/phase-2/ast-node.md`
+
+**[P] Task 2.2: Update Visitor Interface** @code-writer
+- Update: `ZplNodeVisitor.kt`
+- Add: `fun visit([commandName]: [CommandName]Command): T`
+- Output: `features/[feature-id]/agents/phase-2/visitor-interface.md`
+
+**[P] Task 2.3: Implement Visitor** @code-writer
+- Update: `AstPrinterVisitorImpl.kt`
+- Add: Visitor implementation
+- Output: `features/[feature-id]/agents/phase-2/visitor-impl.md`
+
+**[S] Task 2.4: Add Parser Method** @code-writer
+- Update: `ZplParser.kt`
+- Add: `parse[CommandName]()` method
+- Integrate: Add to main parser switch
+- Output: `features/[feature-id]/agents/phase-2/parser-method.md`
+
+**[S] Task 2.5: Update Lexer** @code-writer
+- Update: `Lexer.kt` commandInfo map
+- Add: Command registration
+- Output: `features/[feature-id]/agents/phase-2/lexer-update.md`
+
+**[S] Task 2.6: Create Utilities** @code-writer (if needed)
+- Skip if: No complex parsing needed
+- Create: `[CommandName]ParsingUtils.kt`
+- Output: `features/[feature-id]/agents/phase-2/utilities.md`
+
+### Phase 3: Validation & Fix Loop
+
+**LOOP START:**
+
+**Loop Tracker File:** `features/[feature-id]/agents/validation/loop-tracker.md`
+```markdown
+## Validation Loop Tracker
+- Loop Count: [N]/50
+- Started: [timestamp]
+- Current Status: [phase]
+
+### Iteration History
+1. [timestamp] - Failed: Tests (5 failures) → Fixed
+2. [timestamp] - Failed: Coverage (75%) → Fixed  
+3. [timestamp] - Failed: Detekt (3 violations) → Fixed
+
+### Current Iteration: [N]
+- [ ] Tests: PENDING
+- [ ] Coverage: PENDING
+- [ ] Static Analysis: PENDING
+- [ ] Linting: PENDING
+- [ ] Performance: PENDING
+- [ ] Integration: PENDING
+- [ ] Demo: PENDING
+```
+
+**[S] Task 3.1: Run Tests** @test-runner
+- Run: `./gradlew test --tests "*[CommandName]Test"`
+- Update: `loop-tracker.md` - mark Tests checkbox
+- Success (100% pass): → Continue to 3.2
+- Failure: → Go to FIX-3.1
+- Output: `features/[feature-id]/agents/validation/test-results.md`
+
+**[S] FIX-3.1: Fix Test Failures** @code-writer
+- Input: `validation/test-results.md`
+- Update: `loop-tracker.md` - increment loop count
+- Context format:
+  ```markdown
+  ## Test Failures - Iteration [N]
+  Loop Count: [N]/50
+
+  ### Failures to Fix
+  - [x] Test: "should parse minimal BC command" 
+    - Reason: Expected BCCommand but got null
+    - Fix: Added BC to parser switch statement
+    - Fixed in: ZplParser.kt line 234
+
+  - [ ] Test: "should handle empty field data"
+    - Reason: NullPointerException on empty string
+    - Fix needed: Add null check in parseBCCommand()
+  ```
+- → Return to 3.1
+
+**[S] Task 3.2: Check Coverage** @test-runner
+- Run: `./gradlew jacocoTestReport`
+- Success (≥80%): → Continue to 3.3
+- Failure: → Go to FIX-3.2
+- Output: `features/[feature-id]/agents/validation/coverage.md`
+
+**[S] FIX-3.2: Add Missing Coverage** @code-writer
+- Input: `validation/coverage.md`
+- Context format:
+  ```markdown
+  ## Coverage Gaps - Iteration [N]
+  Current Coverage: 75%
+
+  ### Uncovered Code
+  - [ ] BCCommand.kt line 45-48 (validation method)
+    - Need: Test for invalid mode combinations
+  ```
+- → Return to 3.1 (rerun all tests)
+
+**[P] Task 3.3: Static Analysis** @test-runner
+- Run: `./gradlew detekt`
+- Success (zero violations): → Continue to 3.4
+- Failure: → Go to FIX-3.3
+- Output: `features/[feature-id]/agents/validation/detekt.md`
+
+**[P] FIX-3.3: Fix Static Analysis** @code-writer
+- Input: `validation/detekt.md`
+- NEVER suppress, always fix
+- → Return to 3.3
+
+**[P] Task 3.4: Linting** @test-runner
+- Run: `./gradlew ktlintFormat` then `./gradlew ktlintCheck`
+- Success (zero violations): → Continue to 3.5
+- Failure: → Go to FIX-3.4
+- Output: `features/[feature-id]/agents/validation/linting.md`
+
+**[P] FIX-3.4: Fix Linting** @code-writer
+- Input: `validation/linting.md`
+- → Return to 3.4
+
+**[S] Task 3.5: Create Benchmarks** @code-writer (if Complex)
+- Skip if: Simple command OR benchmarks exist
+- Create: `src/benchmark/kotlin/.../[CommandName]Benchmarks.kt`
+- Output: `features/[feature-id]/agents/validation/benchmark-created.md`
+
+**[S] Task 3.6: Performance Check** @test-runner (if benchmarks exist)
+- Run: `./gradlew benchmark`
+- Success (no >10% regression): → Continue to 3.7
+- Failure: → Go to FIX-3.6
+- Output: `features/[feature-id]/agents/validation/performance.md`
+
+**[S] FIX-3.6: Optimize Performance** @code-writer
+- Input: `validation/performance.md`
+- → Return to 3.1 (ensure optimization didn't break tests)
+
+**[S] Task 3.7: Integration Test** @test-runner
+- Run: `./gradlew check`
+- Success (BUILD SUCCESSFUL): → Continue to 3.8
+- Failure: → Analyze and fix specific failure
+- Output: `features/[feature-id]/agents/validation/integration.md`
+
+**[S] Task 3.8: Demo Validation** @test-runner
+- Run: `./gradlew run`
+- Success: → COMPLETE
+- Failure: → Go to FIX-3.8
+- Output: `features/[feature-id]/agents/validation/demo.md`
+
+**[S] FIX-3.8: Fix Runtime Issues** @code-writer
+- Input: `validation/demo.md`
+- → Return to 3.1
+
+**LOOP END**
+
+### Master Progress (User-Visible)
+`features/[feature-id]/agents/progress.md`:
+```markdown
+## Feature Implementation Progress
+**Auto-updated by agents - visible in real-time**
+
+### Current Status: VALIDATION LOOP
+- Loop Iteration: [N]/50
+- Last Update: [timestamp]
+
+### Phase Progress
+✅ Phase 1: Test Creation - COMPLETE
+✅ Phase 2: Implementation - COMPLETE
+🔄 Phase 3: Validation - IN PROGRESS
+
+### Validation Status (Iteration [N])
+- ⏳ Tests: 90% passing (2/20 failing)
+- ⏳ Coverage: 77% (target 80%)
+- ⏳ Static Analysis: 2 violations remaining
+- ✅ Linting: PASSED
+- ⏸️ Performance: NOT RUN YET
+
+### Loop History
+| Iteration | Failed On | Issues | Time |
+|-----------|-----------|--------|------|
+| 1 | Tests | 20 failures | 2 min |
+| 2 | Tests | 8 failures | 1 min |
+| 3 | Coverage | 65% | 3 min |
+```
+
+### Recovery Patterns
+<!-- GENERATOR: Include as-is -->
+#### Intelligent Failure Handling
+- Iterations 1-5: Focus on implementation fixes
+- Iterations 6-10: Check test correctness
+- Iterations 11-15: Consider architectural changes
+- Iterations 16+: Document blockers for escalation
+
+#### Circular Fix Detection
+If same test fails 3 times after being "fixed":
+- Flag as potential test design issue
+- Try alternative implementation approach
+- Document pattern for human review
+
+#### Performance Recovery
+If regression persists after 5 iterations:
+- Profile specific slow operations
+- Check for unnecessary object creation
+- Consider algorithm change needed
+
+### Escalation Conditions
+<!-- WHEN TO STOP AND ASK FOR HELP -->
+STOP and escalate if:
+- Iteration count exceeds 50
+- Research findings conflict with codebase reality
+- Circular dependency detected between fixes
+- Performance requirement appears impossible
+- Test expectations seem incorrect (not implementation)
+- Architecture change required (new base classes, etc.)
+
+Escalation output: `features/[feature-id]/agents/ESCALATION.md`
+Include: Full state.json, last 5 iterations, specific blocker
+
+### Loop Control
 ```yaml
-# TDD Implementation Tasks (STRICT ORDER - Tests First!)
-Task 1: CREATE TEST FILE src/test/kotlin/com/whitespacesystems/parser/parser/NewCommandTest.kt
-  - PATTERN: Use Kotest StringSpec with descriptive test names
-  - CRITICAL: Write ALL test cases FIRST (before any implementation)
-  - TESTS WILL FAIL - That's correct and expected
-  - VERIFY: ./gradlew test --tests "*NewCommand*" shows failures
-
-Task 2: RUN TESTS TO CONFIRM RED PHASE
-  - RUN: ./gradlew test --tests "*NewCommand*"
-  - VERIFY: All new tests are RED (failing) as expected
-  - DOCUMENT: List of expected test failures in notes
-
-Task 3: CREATE MINIMAL AST NODE src/main/kotlin/com/whitespacesystems/parser/ast/NewCommand.kt
-  - PATTERN: Follow existing AST node structure (FieldOriginCommand.kt)  
-  - CRITICAL: ONLY what's needed for FIRST test to pass
-  - NO extra features, NO optimizations
-  - VERIFY: Extends ZplNode sealed class, basic visitor pattern
-
-Task 4: CREATE MINIMAL PARSER LOGIC in ZplParser.kt
-  - ADD: parseNewCommand() method with basic parsing
-  - CRITICAL: ONLY enough logic for tests to pass
-  - NO complex parameter handling yet
-  - VERIFY: Method integrates with main parse() switch
-
-Task 5: VERIFY GREEN PHASE - All Tests Pass
-  - RUN: ./gradlew test --tests "*NewCommand*"
-  - VERIFY: All tests now pass (GREEN phase achieved)
-  - DOCUMENT: Confirm transition from RED to GREEN
-
-Task 6: REFACTOR PHASE - Optimize and Clean Up
-  - NOW add full parameter parsing, error handling
-  - Add performance optimizations
-  - Improve code structure and naming
-  - VERIFY: ./gradlew test still passes after refactoring
-  - VERIFY: 80%+ coverage via ./gradlew jacocoTestReport
-
-# Performance Validation Tasks (MANDATORY for new ZPL commands)
-Task N: CREATE src/benchmark/kotlin/.../NewCommandBenchmarks.kt
-  - PATTERN: Follow CommandBenchmarks.kt structure with @State and @Benchmark annotations
-  - CRITICAL: Include both isolated command and E2E benchmarks
-  - VERIFY: Performance <0.1ms simple commands, <1ms complex commands
-  - INCLUDE: Individual command benchmark + complete label benchmark
-
-Task N+1: VALIDATE no performance regression
-  - RUN: ./gradlew benchmark
-  - CHECK: BaselineComparison output for >10% degradation warnings
-  - VERIFY: No regression in existing commands
-  - IF REGRESSION: STOP and create regression fix PRP before completing feature
-
-Task N+2: UPDATE baseline performance data
-  - RUN: BaselineComparison utilities to update baseline.json if performance improved
-  - VERIFY: New performance measurements recorded
-  - DOCUMENT: Any optimization insights discovered
-
-# Final Integration Tasks
-Task FINAL-1: Complete quality gates including performance
-  - RUN: ./gradlew check (includes ktlint, detekt, tests)
-  - RUN: ./gradlew benchmark (performance validation)
-  - VERIFY: All quality gates pass WITHOUT configuration modifications
-  - VERIFY: No @Suppress annotations added without explicit user approval
-  - CONFIRM: Zero static analysis violations through code fixes only
-  - EXECUTE: Final Quality Gate Resolution sequence (see [Final Quality Gate Resolution](#-final-quality-gate-resolution-mandatory-last-steps))
-
-Task FINAL: Integration verification
-  - RUN: ./gradlew run (test demo application)
-  - VERIFY: New command works in complete parsing workflows
+LOOP_START: Task 3.1
+LOOP_CONDITION: Any validation task fails
+LOOP_MAX_ITERATIONS: 50
+LOOP_TRACKER: validation/loop-tracker.md
+ABORT_CONDITION: Loop count > 50
+SUCCESS_CONDITION: All validation checkboxes marked complete
 ```
 
-## 🔴 FINAL QUALITY GATE RESOLUTION (MANDATORY LAST STEPS)
+### Parallelization Notes
+- Phase 2: Tasks 2.1-2.3 run in parallel, then 2.4-2.6 sequential
+- Phase 3: Tasks 3.3-3.4 can run in parallel after tests pass
+- Fix tasks are targeted to specific issues, not full reimplementation
+- Loop iteration limit: 50
 
-### The Last Thing Before Feature Completion
-**NO feature is considered complete until ALL THREE quality gates pass:**
+## 7. Project Standards
+<!-- STATIC SECTION - Copy exactly as shown -->
+See [CLAUDE.md](../../CLAUDE.md) for complete project guidelines.
 
-1. **Fix ALL Linting Issues** (`./gradlew ktlintFormat` then `./gradlew ktlintCheck`)
-2. **Fix ALL Static Analysis Violations** (`./gradlew detekt` - fix through code changes ONLY)  
-3. **Fix ALL Test Failures** (`./gradlew test` - must achieve 100% pass rate)
-
-### Final Validation Sequence
+### Build Commands
 ```bash
-# MANDATORY: Run these commands IN ORDER as the FINAL steps
-# A feature is INCOMPLETE if ANY of these fail
-
-# Step 1: Auto-fix formatting issues
-./gradlew ktlintFormat
-
-# Step 2: Verify all linting passes
-./gradlew ktlintCheck
-# ✅ Must show: BUILD SUCCESSFUL with zero violations
-
-# Step 3: Run static analysis
-./gradlew detekt
-# ✅ Must show: BUILD SUCCESSFUL with zero violations
-
-# Step 4: Run all tests
-./gradlew test
-# ✅ Must show: 100% tests passed (not 99%, not 101/102)
-
-# Step 5: Verify coverage
-./gradlew jacocoTestReport
-# ✅ Must show: ≥80% coverage
-
-# Step 6: Final comprehensive check
-./gradlew check
-# ✅ Must show: BUILD SUCCESSFUL
-
-# ONLY after ALL above pass → Feature is COMPLETE
+./gradlew build          # Build project
+./gradlew test           # Run tests
+./gradlew ktlintCheck    # Check linting
+./gradlew ktlintFormat   # Auto-fix formatting
+./gradlew detekt         # Static analysis
+./gradlew benchmark      # Performance tests
+./gradlew check          # All quality gates
 ```
 
-### If ANY Quality Gate Fails
-- **STOP** - Do not consider feature complete
-- **FIX** - Address violations through code changes only
-- **RERUN** - Execute the full validation sequence again
-- **REPEAT** - Until ALL quality gates pass
+### Requirements
+- **Coverage**: ≥80% minimum
+- **Performance**: <0.1ms simple, <1ms complex commands
+- **Quality**: Zero violations (linting, static analysis)
+- **Config Files**: NEVER edit detekt.yml, ktlint config without approval
+- **Suppressions**: NEVER use @Suppress without explicit approval
 
-**Remember**: A feature with failing quality gates is an INCOMPLETE feature, regardless of functionality.
+## 8. Architecture Patterns
+<!-- STATIC SECTION - Copy exactly as shown -->
+### Critical Implementation Rules
+1. **Token Precedence**: `expectingFieldData` MUST come first in lexer
+2. **Dynamic Characters**: Never hardcode `^`, `~`, `,` - use variables
+3. **Command Lookup**: Use HashMap for O(1) recognition
+4. **Visitor Pattern**: All nodes implement accept() method
+5. **Error Handling**: Include position in ParseExceptions
 
-## Performance Regression Handling Workflow
-
-### When Performance Regression Detected (>10% degradation)
-
-If `./gradlew benchmark` shows ANY command has degraded >10%:
-
-1. **STOP current PRP completion** - Do not mark the feature complete
-2. **Document regression details** in current PRP completion notes:
-   ```
-   🔍 PERFORMANCE REGRESSION DETECTED:
-   - Affected command(s): [command name(s)]  
-   - Performance change: [baseline] → [current] ([X%] slower)
-   - Likely cause: [recent implementation changes]
-   - BaselineComparison output: [paste warning messages]
-   
-   ⚠️ Current PRP cannot be completed until regression is resolved.
-   ```
-
-3. **Create INITIAL.md for regression fix**:
-   ```markdown
-   # PERFORMANCE REGRESSION DETECTED
-
-   ## Commands Affected
-   [List specific commands with >10% degradation and performance deltas]
-
-   ## Performance Impact Analysis
-   - [Command 1]: [baseline] → [current] ([X%] degradation)
-   - [Command 2]: [baseline] → [current] ([Y%] degradation)
-   
-   ## Root Cause Investigation Required
-   - Analyze recent implementation changes that may have introduced inefficiencies
-   - Profile hot paths for object allocations or algorithmic complexity increases
-   - Review parsing logic for unnecessary string operations or repeated calculations
-   
-   ## Requirements
-   - Investigate root cause of performance regression
-   - Implement performance optimization fixes
-   - Validate fixes restore performance to within 5% of baseline
-   - Update benchmarks and baseline.json with verified measurements
-   - Ensure no other commands regress during optimization
-   ```
-
-4. **Execute regression fix using standard PRP workflow**:
-   - Run `/prep-prp` on the populated INITIAL.md
-   - Generate PRP using `/generate-prp` with regression focus
-   - Execute regression fix PRP BEFORE completing original feature PRP
-   - Original feature remains incomplete until performance is restored
-
-5. **Verify regression resolution and complete original PRP**:
-   ```bash
-   ./gradlew benchmark
-   # Confirm no >10% degradation warnings
-   # Confirm affected commands within acceptable thresholds
-   # Complete original PRP with performance validation passed
-   ```
-
-### Regression Fix PRP Integration
-
-The regression fix workflow integrates seamlessly with existing PRP tools:
-- **INITIAL.md**: Contains regression context and requirements
-- **`/prep-prp`**: Processes regression details into structured PRP
-- **`/generate-prp`**: Creates focused performance optimization plan
-- **Standard PRP execution**: Follows same quality gates and validation
-
-### Regression Fix PRP Requirements
-
-All regression fix PRPs must include:
-- Root cause analysis of what caused the degradation
-- Specific optimization strategies (avoid allocations, optimize hot paths, etc.)
-- Before/after performance measurements with `./gradlew benchmark`
-- Verification that the fix doesn't cause other regressions
-- Update to baseline.json with new verified measurements
-- Integration testing with `./gradlew run` demo application
-
----
-
-# FOUNDATION REFERENCE
-**Essential architecture patterns, performance optimization guidelines, and coding standards for ZPL parser implementation.**
-
-## Reference Sections
-The following comprehensive sections provide detailed implementation guidance:
-
-- **[Foundation Reference](sections/foundation.md)** - Core architecture patterns and development requirements
-- **[Quality Gates](sections/quality-gates.md)** - Mandatory validation and static analysis requirements
-- **[TDD Workflow](sections/tdd-workflow.md)** - Test-driven development patterns with Kotest examples
-- **[Performance Requirements](sections/performance.md)** - Benchmarking and regression handling
-- **[Lexer Patterns](sections/patterns/lexer.md)** - Critical lexer implementation patterns and gotchas
-- **[Parser Patterns](sections/patterns/parser.md)** - Parser-specific implementation requirements
-- **[AST Patterns](sections/patterns/ast.md)** - AST node and visitor pattern requirements
-
-## Quick Reference Summary
-
-### Critical Implementation Patterns
-- **STRICT TDD**: Write tests FIRST, confirm RED, achieve GREEN, then REFACTOR
-- **expectingFieldData FIRST**: Critical token precedence in lexer to avoid bugs
-- **Dynamic Characters**: Use caretChar, tildeChar, delimiterChar variables (never hardcode)
-- **O(1) Command Lookup**: HashMap-based command recognition for performance
-- **Sealed Class Hierarchy**: Type-safe AST nodes with visitor pattern
-- **Position Tracking**: Include token position in all ParseExceptions
-
-### Quality Gates (Non-Negotiable)
-```bash
-./gradlew ktlintFormat  # Auto-fix formatting
-./gradlew ktlintCheck   # Zero violations required
-./gradlew detekt        # Zero violations required
-./gradlew test          # 100% pass rate required
-./gradlew check         # All quality gates must pass
+### Parser Flow
+```
+Lexer.kt → Token → Parser.kt → AST Node → Visitor Pattern
 ```
 
-### Performance Requirements
-- Simple commands: <0.1ms (100,000ns)
-- Complex commands: <1ms (1,000,000ns)
-- Coverage minimum: 80%
-- Regression threshold: >10% triggers fix PRP
+## 9. TDD Workflow
+<!-- STATIC SECTION - Copy exactly as shown -->
+### Mandatory Process
+1. **RED**: Write ALL tests first (they must fail)
+2. **GREEN**: Write minimal code to pass tests
+3. **REFACTOR**: Optimize only after tests pass
 
+### Never
+- Write implementation before tests
+- Skip the RED phase
+- Suppress test failures
+
+## 10. Final Quality Checklist
+<!-- STATIC SECTION - Copy exactly as shown -->
+**NO FEATURE IS COMPLETE UNTIL ALL PASS:**
+
+- [ ] `./gradlew ktlintFormat` → `ktlintCheck` (zero violations)
+- [ ] `./gradlew detekt` (zero violations)
+- [ ] `./gradlew test` (100% pass)
+- [ ] `./gradlew jacocoTestReport` (≥80% coverage)
+- [ ] `./gradlew benchmark` (no >10% regression)
+- [ ] `./gradlew check` (BUILD SUCCESSFUL)
+- [ ] `./gradlew run` (demo works)
+
+Feature is INCOMPLETE if ANY check fails.
+
+## 11. Definition of Done
+<!-- BEYOND JUST PASSING TESTS -->
+### Implementation Complete When:
+- [x] All tests passing (100%)
+- [x] Coverage ≥80%
+- [x] Zero linting violations
+- [x] Zero static analysis issues
+- [x] No performance regressions >10%
+- [x] Demo application runs successfully
+- [x] Real-world ZPL samples parse correctly (if provided)
+- [x] Error messages are clear and actionable
+- [x] No TODOs or code smells remaining
+- [x] Follows all existing patterns
+
+### Final Metrics
+- Total iterations: [N]
+- Total time: [duration]
+- Files modified: [count]
+- Final coverage: [%]
