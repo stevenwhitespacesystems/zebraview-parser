@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "WebFetch(domain:)",
+      "WebSearch",
+      "Bash(tree:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)",
+      "Bash(kotlinc:*)",
+      "Bash(java:*)",
+      "Bash(find:*)",
+      "Bash(yq:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/advanced_tts.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/advanced_tts.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

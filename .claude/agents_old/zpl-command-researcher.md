@@ -63,7 +63,6 @@ yq eval ".research.elapsed_seconds = $ELAPSED" -i state.yaml
 yq eval '.phase = "prp"' -i state.yaml
 yq eval '.prp.status = "active"' -i state.yaml
 yq eval ".prp.started = \"$END_TIME\"" -i state.yaml
-yq eval '.agent = "prp-generator"' -i state.yaml
 ```
 
 **On Error:**
