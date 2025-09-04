@@ -70,7 +70,12 @@ EOF
 ## Step 3: Launch Research Agent
 Use Task tool with:
 - **Subagent:** `zpl-command-researcher`  
-- **Prompt:** `Research ZPL command ${COMMAND}. State file: features/${FEATURE_ID}/agents/state.yaml. Read command spec from data/zpl/${COMMAND}.md, analyze implementation requirements, write findings to designated path, then update state to complete research phase and transition to PRP generation.`
+- **Prompt:** `Research ZPL command ${COMMAND} using state file features/${FEATURE_ID}/agents/state.yaml`
+
+## Step 4: Launch PRP Generator (After Research Completes)
+Use Task tool with:
+- **Subagent:** `prp-generator`
+- **Prompt:** `Generate PRP for ZPL command ${COMMAND} using state file features/${FEATURE_ID}/agents/state.yaml`
 
 ## State Management (Agents)
 
