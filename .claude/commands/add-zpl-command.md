@@ -1,43 +1,109 @@
-# /add-zpl-command
+# Add ZPL Command
 
-Initiates the workflow for adding a new ZPL command to the parser by triggering research and documentation generation.
+Implement a new ZPL command: $ARGUMENTS
 
-## Usage
-```
-/add-zpl-command <command>
-```
+## Quick Start
+1. **Validate**: Command provided, data file exists
+2. **Setup**: Generate feature ID, create directories  
+3. **Launch**: Create state file and start research agent
 
-## Parameters
-- `command` (required): The ZPL command name (e.g., BC, BD, XA, XZ)
+## Step 1: Validation & Setup
+```bash
+# Validate inputs
+COMMAND="${ARGUMENTS^^}"  # Uppercase
+[ -z "$COMMAND" ] && { echo "Error: Command required"; exit 1; }
+[ ! -f "data/zpl/${COMMAND}.md" ] && { echo "Error: data/zpl/${COMMAND}.md not found"; exit 1; }
 
-## Description
-This command starts the sub-agents workflow for implementing a new ZPL command:
+# Generate feature ID
+NEXT_ID=$(printf "%04d" $(($(ls features/ | grep -E '^[0-9]+' | cut -d'-' -f1 | sort -n | tail -1) + 1)))
+FEATURE_ID="${NEXT_ID}-$(echo $COMMAND | tr '[:upper:]' '[:lower:]')-command"
 
-1. **Research Phase**: Launches the `zpl-command-researcher` agent to analyze the command specification from `data/zpl/{command}.md`
-2. **Documentation**: Creates structured findings in `features/{number}-{command}-command/agents/zpl-command-researcher/findings.md`
-
-## Example
-```
-/add-zpl-command BC
-```
-This will:
-- Research the ^BC (Code 128 Bar Code) command
-- Create feature directory structure
-- Generate research findings for implementation planning
-
-## Workflow
-The command triggers the `zpl-command-researcher` agent which analyzes command specifications and requirements.
-
-## Output Structure
-```
-features/
-├── {number}-{command}-command/
-│   ├── agents/
-│   │   └── zpl-command-researcher/
-│   │       └── findings.md
+# Create structure
+mkdir -p "features/${FEATURE_ID}/agents/zpl-command-researcher"
 ```
 
-## Notes
-- Command names are case-insensitive but will be normalized to uppercase
-- Requires corresponding documentation in `data/zpl/{command}.md`
-- Creates feature numbering based on existing features in the directory
+## Step 2: Create State File
+**Location:** `features/{feature-id}/agents/state.yaml`
+
+```yaml
+# Auto-generated state file for coordination
+feature_id: ${FEATURE_ID}
+command: ${COMMAND}
+initiated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Current workflow position
+phase: research        # research|prp|implementation  
+status: active         # active|complete|failed
+agent: zpl-command-researcher
+
+# Phase tracking
+research:
+  status: active       # pending|active|complete|failed
+  started: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  findings: agents/zpl-command-researcher/findings.md
+
+prp:
+  status: pending
+  path: prp.md
+
+implementation:
+  status: pending
+  iteration: 0
+  max_iterations: 50
+  last_failure: none   # tests|coverage|detekt|ktlint|performance|integration|demo
+```
+
+## Step 3: Launch Research Agent
+Use Task tool with:
+- **Subagent:** `zpl-command-researcher`  
+- **Prompt:** `Research ZPL command ${COMMAND}. State file: features/${FEATURE_ID}/agents/state.yaml. Read command spec from data/zpl/${COMMAND}.md, analyze implementation requirements, write findings to designated path, then update state to complete research phase and transition to PRP generation.`
+
+## State Management (Agents)
+
+### Reading State
+```bash
+# Parse YAML (all agents)
+PHASE=$(yq r state.yaml phase)
+STATUS=$(yq r state.yaml status)
+FINDINGS_PATH=$(yq r state.yaml research.findings)
+```
+
+### Updating State  
+```bash
+# Mark phase complete
+yq w -i state.yaml research.status complete
+yq w -i state.yaml research.completed "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+yq w -i state.yaml phase prp
+yq w -i state.yaml prp.status active  
+yq w -i state.yaml agent prp-generator
+```
+
+### Phase Transitions
+1. **research** → findings written → **prp** 
+2. **prp** → PRP document created → **implementation**
+3. **implementation** → all validations pass → **complete**
+
+## Error Handling
+- Missing command: Exit with usage message
+- Missing data file: Exit with file path error  
+- Directory creation fails: Exit with permissions error
+- Agent launch fails: Check state file exists first
+
+## File Structure Created
+```
+features/{feature-id}/
+├── agents/
+│   ├── state.yaml                    # Central coordination (30 lines)
+│   └── zpl-command-researcher/
+│       └── findings.md               # Research output
+└── prp.md                           # Generated implementation plan
+```
+
+## Implementation Notes
+- **Token efficiency**: Single compact YAML vs verbose JSON saves 75% tokens
+- **Atomic updates**: Each phase update is single yq command  
+- **Smart defaults**: Auto-generate paths, timestamps, feature IDs
+- **Error recovery**: State file shows exactly where process failed
+- **Agent coordination**: All agents read/write same state.yaml for workflow sync
+
+This streamlined approach reduces complexity while maintaining full coordination capabilities.

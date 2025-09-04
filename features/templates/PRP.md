@@ -231,25 +231,21 @@ Agent Types:
 
 ### Execution State Management
 <!-- CRITICAL: Single source of truth -->
-State file: `features/[feature-id]/agents/state.json`
-```json
-{
-  "current_phase": "[1|2|3]",
-  "current_iteration": 0,
-  "max_iterations": 50,
-  "phase_2_parallel": {
-    "ast_node": "pending|in_progress|complete",
-    "visitor_interface": "pending|in_progress|complete",
-    "visitor_impl": "pending|in_progress|complete"
-  },
-  "validation_loop": {
-    "iteration": 0,
-    "last_failure": "none",
-    "fixes_applied": []
-  }
-}
+State file: `features/[feature-id]/agents/state.yaml`
+```yaml
+# Simplified state tracking - single source of truth
+feature_id: [feature-id]
+command: [COMMAND]
+phase: implementation  # research|prp|implementation
+status: active         # active|complete|failed
+
+implementation:
+  status: active       # pending|active|complete|failed
+  iteration: 0         # Current validation loop iteration
+  max_iterations: 50
+  last_failure: none   # tests|coverage|detekt|ktlint|performance|integration|demo
 ```
-All agents MUST update this atomically.
+All agents update using: `yq w -i state.yaml [field] [value]`
 
 ### Phase 1: Test Creation (RED Phase)
 **[S] Task 1.1: Create Test File** @code-writer
@@ -311,38 +307,29 @@ All agents MUST update this atomically.
 
 **LOOP START:**
 
-**Loop Tracker File:** `features/[feature-id]/agents/validation/loop-tracker.md`
-```markdown
-## Validation Loop Tracker
-- Loop Count: [N]/50
-- Started: [timestamp]
-- Current Status: [phase]
+**State Tracking:** All progress tracked in `state.yaml`
+```bash
+# Update iteration count
+yq w -i state.yaml implementation.iteration $(($(yq r state.yaml implementation.iteration) + 1))
 
-### Iteration History
-1. [timestamp] - Failed: Tests (5 failures) → Fixed
-2. [timestamp] - Failed: Coverage (75%) → Fixed  
-3. [timestamp] - Failed: Detekt (3 violations) → Fixed
+# Track failure type  
+yq w -i state.yaml implementation.last_failure "tests"  # or coverage, detekt, etc
 
-### Current Iteration: [N]
-- [ ] Tests: PENDING
-- [ ] Coverage: PENDING
-- [ ] Static Analysis: PENDING
-- [ ] Linting: PENDING
-- [ ] Performance: PENDING
-- [ ] Integration: PENDING
-- [ ] Demo: PENDING
+# Check current status
+ITERATION=$(yq r state.yaml implementation.iteration)
+MAX_ITER=$(yq r state.yaml implementation.max_iterations)
+LAST_FAIL=$(yq r state.yaml implementation.last_failure)
 ```
 
 **[S] Task 3.1: Run Tests** @test-runner
 - Run: `./gradlew test --tests "*[CommandName]Test"`
-- Update: `loop-tracker.md` - mark Tests checkbox
 - Success (100% pass): → Continue to 3.2
-- Failure: → Go to FIX-3.1
+- Failure: `yq w -i state.yaml implementation.last_failure "tests"` → Go to FIX-3.1
 - Output: `features/[feature-id]/agents/validation/test-results.md`
 
 **[S] FIX-3.1: Fix Test Failures** @code-writer
 - Input: `validation/test-results.md`
-- Update: `loop-tracker.md` - increment loop count
+- Update: `yq w -i state.yaml implementation.iteration $(($(yq r state.yaml implementation.iteration) + 1))`
 - Context format:
   ```markdown
   ## Test Failures - Iteration [N]
@@ -433,34 +420,19 @@ All agents MUST update this atomically.
 
 **LOOP END**
 
-### Master Progress (User-Visible)
-`features/[feature-id]/agents/progress.md`:
-```markdown
-## Feature Implementation Progress
-**Auto-updated by agents - visible in real-time**
+### Progress Tracking
+View current status directly from state file:
+```bash
+# Check current progress
+echo "Phase: $(yq r state.yaml phase)"
+echo "Status: $(yq r state.yaml status)" 
+echo "Iteration: $(yq r state.yaml implementation.iteration)/$(yq r state.yaml implementation.max_iterations)"
+echo "Last failure: $(yq r state.yaml implementation.last_failure)"
 
-### Current Status: VALIDATION LOOP
-- Loop Iteration: [N]/50
-- Last Update: [timestamp]
-
-### Phase Progress
-✅ Phase 1: Test Creation - COMPLETE
-✅ Phase 2: Implementation - COMPLETE
-🔄 Phase 3: Validation - IN PROGRESS
-
-### Validation Status (Iteration [N])
-- ⏳ Tests: 90% passing (2/20 failing)
-- ⏳ Coverage: 77% (target 80%)
-- ⏳ Static Analysis: 2 violations remaining
-- ✅ Linting: PASSED
-- ⏸️ Performance: NOT RUN YET
-
-### Loop History
-| Iteration | Failed On | Issues | Time |
-|-----------|-----------|--------|------|
-| 1 | Tests | 20 failures | 2 min |
-| 2 | Tests | 8 failures | 1 min |
-| 3 | Coverage | 65% | 3 min |
+# Quick status check
+PHASE=$(yq r state.yaml phase)
+STATUS=$(yq r state.yaml status)
+echo "[$PHASE] $STATUS"
 ```
 
 ### Recovery Patterns
