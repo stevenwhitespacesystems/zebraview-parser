@@ -6,6 +6,8 @@ Implement a new ZPL command: $ARGUMENTS
 1. **Validate**: Command provided, data file exists
 2. **Setup**: Generate feature ID, create directories  
 3. **Launch**: Create state file and start research agent
+4. **Continue**: Automatically launch PRP generator when research completes
+5. **Monitor**: Track workflow progress through state transitions
 
 ## Step 1: Validation & Setup
 ```bash
@@ -72,10 +74,30 @@ Use Task tool with:
 - **Subagent:** `zpl-command-researcher`  
 - **Prompt:** `Research ZPL command ${COMMAND} using state file features/${FEATURE_ID}/agents/state.yaml`
 
-## Step 4: Launch PRP Generator (After Research Completes)
+## Step 4: Launch PRP Generator (Automatic)
+**IMPORTANT**: After research agent completes, immediately launch PRP generator without waiting.
+
 Use Task tool with:
 - **Subagent:** `prp-generator`
 - **Prompt:** `Generate PRP for ZPL command ${COMMAND} using state file features/${FEATURE_ID}/agents/state.yaml`
+
+## Step 5: Monitor Workflow Progress
+Check state transitions and ensure each phase completes before continuing:
+```bash
+# Check current phase
+CURRENT_PHASE=$(yq eval '.phase' "features/${FEATURE_ID}/agents/state.yaml")
+CURRENT_STATUS=$(yq eval '.status' "features/${FEATURE_ID}/agents/state.yaml")
+echo "Current phase: $CURRENT_PHASE ($CURRENT_STATUS)"
+```
+
+## ⚠️ CRITICAL WORKFLOW INSTRUCTION
+**The workflow MUST proceed automatically through all phases:**
+
+1. **After launching research agent** → Wait for completion → **Immediately launch PRP generator**
+2. **After PRP generation** → **Ready for implementation phase**  
+3. **DO NOT** leave workflow in intermediate states - each phase must complete
+
+If a phase fails to transition automatically, manually launch the next agent using the Task tool.
 
 ## State Management (Agents)
 
