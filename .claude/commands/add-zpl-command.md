@@ -25,11 +25,16 @@ mkdir -p "features/${FEATURE_ID}/agents/zpl-command-researcher"
 ## Step 2: Create State File
 **Location:** `features/{feature-id}/agents/state.yaml`
 
-```yaml
+```bash
+# Generate timestamp once for consistency
+CURRENT_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Create state file with proper timestamps
+cat > "features/${FEATURE_ID}/agents/state.yaml" << EOF
 # Auto-generated state file for coordination
 feature_id: ${FEATURE_ID}
 command: ${COMMAND}
-initiated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+initiated: ${CURRENT_TIME}
 
 # Current workflow position
 phase: research        # research|prp|implementation  
@@ -39,18 +44,27 @@ agent: zpl-command-researcher
 # Phase tracking
 research:
   status: active       # pending|active|complete|failed
-  started: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  started: ${CURRENT_TIME}
+  completed: null
+  elapsed_seconds: null
   findings: agents/zpl-command-researcher/findings.md
 
 prp:
   status: pending
+  started: null
+  completed: null
+  elapsed_seconds: null
   path: prp.md
 
 implementation:
   status: pending
+  started: null
+  completed: null
+  elapsed_seconds: null
   iteration: 0
   max_iterations: 50
   last_failure: none   # tests|coverage|detekt|ktlint|performance|integration|demo
+EOF
 ```
 
 ## Step 3: Launch Research Agent
@@ -62,20 +76,31 @@ Use Task tool with:
 
 ### Reading State
 ```bash
-# Parse YAML (all agents)
-PHASE=$(yq r state.yaml phase)
-STATUS=$(yq r state.yaml status)
-FINDINGS_PATH=$(yq r state.yaml research.findings)
+# Parse YAML (all agents) - yq v4 syntax
+PHASE=$(yq eval '.phase' state.yaml)
+STATUS=$(yq eval '.status' state.yaml)
+FINDINGS_PATH=$(yq eval '.research.findings' state.yaml)
 ```
 
 ### Updating State  
 ```bash
-# Mark phase complete
-yq w -i state.yaml research.status complete
-yq w -i state.yaml research.completed "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-yq w -i state.yaml phase prp
-yq w -i state.yaml prp.status active  
-yq w -i state.yaml agent prp-generator
+# Mark phase complete with elapsed time
+START_TIME=$(yq eval '.research.started' state.yaml)
+END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Calculate elapsed seconds (macOS compatible)
+START_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$START_TIME" +%s)
+END_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$END_TIME" +%s)
+ELAPSED=$((END_EPOCH - START_EPOCH))
+
+# Update state with completion and elapsed time
+yq eval '.research.status = "complete"' -i state.yaml
+yq eval ".research.completed = \"$END_TIME\"" -i state.yaml
+yq eval ".research.elapsed_seconds = $ELAPSED" -i state.yaml
+yq eval '.phase = "prp"' -i state.yaml
+yq eval '.prp.status = "active"' -i state.yaml
+yq eval ".prp.started = \"$END_TIME\"" -i state.yaml
+yq eval '.agent = "prp-generator"' -i state.yaml
 ```
 
 ### Phase Transitions

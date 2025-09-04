@@ -27,6 +27,18 @@ For each command, systematically evaluate:
 
 Document reasoning for all categorization decisions and alternative approaches considered.
 
+## Token Optimization Guidelines
+
+Generate concise findings while preserving essential context:
+- Use tables over paragraphs where possible
+- State decisions briefly, avoid lengthy justifications  
+- Combine related sections (merge implementation and architecture)
+- Focus on "what" not "why" unless complexity demands explanation
+- Target 40-50% reduction from verbose format
+- Critical information density: high facts-to-words ratio
+- Use abbreviations: AST, impl, deps, etc.
+- Prioritize test cases: list only critical scenarios
+
 ## State Integration
 
 **On Start:**
@@ -35,58 +47,59 @@ Document reasoning for all categorization decisions and alternative approaches c
 
 **On Completion:**
 ```bash
-yq w -i state.yaml research.status complete
-yq w -i state.yaml research.completed "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-yq w -i state.yaml phase prp
-yq w -i state.yaml prp.status active
-yq w -i state.yaml agent prp-generator
+# Calculate elapsed time and update state
+START_TIME=$(yq eval '.research.started' state.yaml)
+END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Calculate elapsed seconds (macOS compatible)
+START_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$START_TIME" +%s)
+END_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$END_TIME" +%s)
+ELAPSED=$((END_EPOCH - START_EPOCH))
+
+# Update state with completion and timing
+yq eval '.research.status = "complete"' -i state.yaml
+yq eval ".research.completed = \"$END_TIME\"" -i state.yaml
+yq eval ".research.elapsed_seconds = $ELAPSED" -i state.yaml
+yq eval '.phase = "prp"' -i state.yaml
+yq eval '.prp.status = "active"' -i state.yaml
+yq eval ".prp.started = \"$END_TIME\"" -i state.yaml
+yq eval '.agent = "prp-generator"' -i state.yaml
 ```
 
 **On Error:**
 ```bash
-yq w -i state.yaml research.status failed
-yq w -i state.yaml research.error "Description of what went wrong"
+yq eval '.research.status = "failed"' -i state.yaml
+yq eval '.research.error = "Description of what went wrong"' -i state.yaml
 ```
 
 ## Required Output: findings.md
 
-### Structure:
+### Optimized Structure:
 ```markdown
-## Command Overview
-- Purpose: [one line description]
-- Format: [exact ZPL syntax]
-- Complexity: [Simple/Medium/Complex with detailed reasoning]
+## Command: [Name] (Complexity: Simple/Medium/Complex)
+Purpose: [one line]
+Format: ^[syntax]
 
-## Technical Specifications
-| Name | Type | Default | Required | Validation |
-|------|------|---------|----------|------------|
-| [parameter details] |
+## Parameters
+| Name | Type | Default | Validation |
+|------|------|---------|------------|
+[Remove "Required" column - use asterisk for required params]
 
-[Field data requirements if applicable]
+## Implementation  
+- **AST**: `[ClassName]Command` [brief reason if complex]
+- **Parser**: `parse[Name]()` [note if special handling needed]
+- **Utils**: [list or none]
+- **Files**: [list of files to modify]
+- **Target**: <0.1ms (simple) or <1ms (complex)
+- **Deps**: [critical dependencies only]
 
-## Implementation Analysis
-- **AST Node**: `data class [Name]Command(...) : ZplNode`
-  - Reasoning: [why this structure over alternatives]
-- **Parser Method**: `parse[Name](): [Name]Command`
-  - Reasoning: [parsing approach and complexity justification]
-- **Utilities**: [list or "none"]
-  - Reasoning: [necessity and architecture fit]
+## Test Cases (5-10 prioritized)
+1. Basic: [input] → [expected]
+2. Edge: [input] → [expected]
+[Focus on critical paths only]
 
-## Test Scenarios
-[5-10 concrete test cases with expected outcomes]
-[Include reasoning for test selection and validation coverage]
-
-## Architecture Impact
-- **Files to Modify**: [Lexer.kt, ZplParser.kt, etc.]
-- **Performance Target**: [<0.1ms or <1ms based on complexity]
-- **Dependencies**: [integration requirements with other commands]
-
-## Implementation Reasoning
-### Complexity Assessment
-[Detailed justification for complexity rating including parameter analysis, parsing algorithm considerations, and comparison with similar commands]
-
-### Design Decisions
-[Alternative approaches considered, trade-offs analyzed, risk mitigation strategies, and validation against existing patterns]
+## Notes
+[Only critical considerations - avoid verbose justifications]
 ```
 
 ## Error Handling
