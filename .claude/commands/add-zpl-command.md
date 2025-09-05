@@ -48,6 +48,9 @@ yq eval '.stages.planner.status = "started"' -i state.yaml
    - Create directory: `features/{FEATURE_NAME}/stages/research`
    - Create directory: `features/{FEATURE_NAME}/stages/planning`
    - Create directory: `features/{FEATURE_NAME}/stages/implementation`
+   - Create directory: `features/{FEATURE_NAME}/stages/implementation/red`
+   - Create directory: `features/{FEATURE_NAME}/stages/implementation/green`
+   - Create directory: `features/{FEATURE_NAME}/stages/implementation/refactor`
 
 ### Setup Feature State
 
@@ -79,7 +82,6 @@ stages:
     error: null
     templates:
        - features/templates/zpl-command-prp.md
-       - features/templates/zpl-command-tasks.md
     output:
        - features/{FEATURE_NAME}/stages/planning/zpl-command-prp.md
   implementation:

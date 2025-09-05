@@ -9,6 +9,25 @@ This template produces:
 - Parser: `private fun parseFieldOrigin(): FieldOriginCommand { ... }`
 Complete example helps agents understand expectations.
 
+## Naming Conventions
+<!-- CRITICAL: Use descriptive names based on FUNCTION, not command codes -->
+**IMPORTANT**: Always use descriptive names that explain what the command DOES, not what its ZPL code is:
+
+✅ **CORRECT Examples**:
+- `CommentCommand` (not `FxCommand`) - ^FX adds comments
+- `FieldOriginCommand` (not `FoCommand`) - ^FO sets field origin
+- `StartFormatCommand` (not `XaCommand`) - ^XA starts format
+- `visitCommentCommand()` (not `visitFxCommand()`)
+- `parseComment()` (not `parseFx()`)
+- `CommentCommandTest` (not `FxCommandTest`)
+
+❌ **INCORRECT Examples**:
+- `FxCommand`, `FoCommand`, `XaCommand` - these use ZPL codes
+- `visitFxCommand()`, `parseFx()` - these use ZPL codes
+- `FxCommandTest` - uses ZPL code
+
+**Pattern**: If ^XX does Y, name it `YCommand` with methods like `parseY()`, `visitYCommand()`, and test class `YCommandTest`
+
 ---
 
 ## 1. Feature Summary
@@ -87,16 +106,16 @@ Steps:
 ### AST Node Structure
 ```kotlin
 // Extract class name from "AST:" field in Implementation section
-// Example: "AST: `BtCommand` [Complex dual-barcode with strict data validation]"
+// Example: "AST: `BarcodeTypeCommand` [Complex dual-barcode with strict data validation]"
 [Extract class name from "AST:" field in research results]
-[VERIFY against existing commands like FieldOriginCommand.kt, BCCommand.kt]
+[VERIFY against existing commands like FieldOriginCommand.kt, StartFormatCommand.kt]
 [ENSURE: extends ZplNode, includes visitor pattern, follows project conventions]
 ```
 
 ### Parser Integration
 ```kotlin
 // Extract method name from "Parser:" field in Implementation section
-// Example: "Parser: `parseBtCommand()` [Float parsing for r1 parameter, DPI-aware defaults]"
+// Example: "Parser: `parseBarcodeType()` [Float parsing for r1 parameter, DPI-aware defaults]"
 [Extract parser method name from "Parser:" field in research results]
 // Check similar commands in ZplParser for parameter parsing patterns
 
@@ -137,11 +156,10 @@ Process:
 
 ### Test Implementation
 ```kotlin
-// Test file: src/test/kotlin/com/whitespacesystems/parser/parser/[CommandName]Test.kt
+// Test file: src/test/kotlin/com/whitespacesystems/parser/parser/[DescriptiveCommandName]Test.kt
 // VERIFY: Use Kotest StringSpec format as seen in existing tests
-// NAMING: Use descriptive test names that explain the behavior being tested
 
-class [CommandName]Test : StringSpec({
+class [DescriptiveCommandName]Test : StringSpec({
     // Tests are written FIRST - they will initially FAIL (RED phase)
     
     "should parse minimal [command] command" { }
@@ -188,12 +206,12 @@ class [CommandName]Test : StringSpec({
 <!-- Extract performance target from "Target:" field in Implementation section -->
 <!-- Example: "Target: <1ms (Complex)" -->
 ```kotlin
-// Benchmark file: src/benchmark/kotlin/.../[CommandName]Benchmarks.kt  
+// Benchmark file: src/benchmark/kotlin/.../[DescriptiveCommandName]Benchmarks.kt  
 // Target: [Extract from "Target:" field in research results Implementation section]
 @State(Scope.Benchmark)
-class [CommandName]Benchmarks {
+class [DescriptiveCommandName]Benchmarks {
     @Benchmark
-    fun parse[CommandName]() { }
+    fun parse[DescriptiveCommandName]() { }
 }
 ```
 

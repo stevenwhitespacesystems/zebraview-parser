@@ -32,6 +32,10 @@ Create comprehensive, failing tests that drive implementation based on any speci
 - NEVER use chained bash commands!
     - I don't want to have to be prompted to confirm complex bash commands
     - Execute bash command individually
+- USE THIS when calculating ELAPSED
+    - `date -j -f "%Y-%m-%dT%H:%M:%S" "2023-12-25T15:30:00" +%s`
+    - Use this for both start and end values and then minus these values.
+    - This will give you the amount of seconds elapsed
 
 ## Reading/Updating State
 You can make use of the `yq` command
@@ -82,7 +86,45 @@ yq eval '.stages.implementation.tasks.red.status = "active"' -i state.yaml
 
 Output Format
 ```markdown
-- `src/test/kotlin/com/whitespacesystems/parser/parser/EndFormatCommandTest.kt::"should parse XZ end format command"`
+# RED Phase Output: FX Command Tests Created
+
+## Test Files Created
+
+### 1. Main Test File
+- `src/test/kotlin/com/whitespacesystems/parser/parser/CommentCommandTest.kt`
+
+## Test Cases Implemented
+[Add test cases implemented here]
+
+### Basic Functionality Tests
+ - [Add test cases here]
+
+### Edge Cases Tests
+- [Add test cases here]
+
+### Command Delimiter Tests
+- [Add test cases here]
+
+### Integration Tests
+- [Add test cases here]
+
+### Real-World Usage Tests
+- [Add test cases here]
+
+## Supporting Infrastructure Created
+[Add Content Here]
+
+## Test Results Summary
+[Add Content Here]
+
+## Coverage Areas
+[Add Content Here]
+
+## Next Steps (GREEN Phase)
+[Add Content Here]
+
+## RED Phase Verification
+[Add Content Here]
 ```
 
 11. **Complete RED Phase**
