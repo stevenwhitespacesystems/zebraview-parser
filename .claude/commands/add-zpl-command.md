@@ -37,6 +37,7 @@ yq eval '.stages.planner.status = "started"' -i state.yaml
    - Add 1 to this count → Store as NEXT_NUMBER
    - Pad with zeros to 4 digits → Store as FEATURE_ID
    - Example: 3 becomes 0003, 10 becomes 0010
+   - Usage: `bc <<< "Count + 1"`
 
 3. Generate feature name
    - Convert COMMAND to lowercase
