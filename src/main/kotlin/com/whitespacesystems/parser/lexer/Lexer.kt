@@ -25,6 +25,7 @@ class Lexer(private val input: String) {
     private var column = 1
     private var lastCommand: String? = null
     private var expectingFieldData = false
+    private var lastFieldDataCommand: String? = null // Track which command triggered field data expectation
 
     // Dynamic ZPL characters (can be changed via ^CC, ^CD, ^CT commands)
     private var caretChar: Char = '^' // Format command prefix (changed by ^CC)
@@ -62,6 +63,11 @@ class Lexer(private val input: String) {
         val startColumn = column
 
         return when {
+            expectingFieldData -> {
+                // If we're expecting field data, always read as string regardless of character type
+                // This includes the case where we immediately hit a delimiter (empty field data)
+                readString(start, startLine, startColumn)
+            }
             current == caretChar || current == tildeChar -> {
                 val prefix = current.toString()
                 advance()
@@ -70,10 +76,6 @@ class Lexer(private val input: String) {
             current == delimiterChar -> {
                 advance()
                 Token(TokenType.COMMA, delimiterChar.toString(), start, startLine, startColumn)
-            }
-            expectingFieldData -> {
-                // If we're expecting field data, always read as string regardless of character type
-                readString(start, startLine, startColumn)
             }
             current in '0'..'9' -> readNumber(start, startLine, startColumn)
             current in 'A'..'Z' || current in 'a'..'z' -> {
@@ -138,7 +140,12 @@ class Lexer(private val input: String) {
         lastCommand = finalCommandName
 
         // Update field data expectation based on command
-        expectingFieldData = CommandRecognitionUtils.updateFieldDataExpectation(finalCommandName, expectingFieldData)
+        val newExpectingFieldData = CommandRecognitionUtils.updateFieldDataExpectation(finalCommandName, expectingFieldData)
+        if (newExpectingFieldData && !expectingFieldData) {
+            // We just started expecting field data, track which command caused it
+            lastFieldDataCommand = finalCommandName
+        }
+        expectingFieldData = newExpectingFieldData
 
         return Token(TokenType.COMMAND, finalCommandName, start, startLine, startColumn)
     }
@@ -166,7 +173,14 @@ class Lexer(private val input: String) {
         // Reset field data expectation after reading the string
         expectingFieldData = false
 
-        return Token(TokenType.STRING, value.toString().trim(), start, startLine, startColumn)
+        // For FX (comment) command, preserve exact whitespace; for others, trim
+        val finalValue = if (lastFieldDataCommand == "FX") {
+            value.toString() // Preserve exact whitespace for comments
+        } else {
+            value.toString().trim() // Trim whitespace for other field data commands
+        }
+        
+        return Token(TokenType.STRING, finalValue, start, startLine, startColumn)
     }
 
     /**

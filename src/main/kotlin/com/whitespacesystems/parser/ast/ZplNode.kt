@@ -21,5 +21,11 @@ interface ZplNodeVisitor<T> {
 
     fun visitEndFormatCommand(command: EndFormatCommand): T
 
+    fun visitCommentCommand(command: CommentCommand): T
+
+    fun visitFieldSeparatorCommand(command: FieldSeparatorCommand): T
+
+    fun visitFieldOriginCommand(command: FieldOriginCommand): T
+
     fun visitZplProgram(program: ZplProgram): T
 }

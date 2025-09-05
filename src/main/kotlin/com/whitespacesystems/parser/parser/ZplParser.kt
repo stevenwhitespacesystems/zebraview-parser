@@ -1,5 +1,8 @@
 package com.whitespacesystems.parser.parser
 
+import com.whitespacesystems.parser.ast.CommentCommand
+import com.whitespacesystems.parser.ast.FieldOriginCommand
+import com.whitespacesystems.parser.ast.FieldSeparatorCommand
 import com.whitespacesystems.parser.ast.ZplNode
 import com.whitespacesystems.parser.ast.ZplProgram
 import com.whitespacesystems.parser.lexer.Token
@@ -30,7 +33,7 @@ class ZplParser(private val tokens: List<Token>) {
 
         while (current.type != TokenType.EOF) {
             val command = parseCommand()
-            commands.add(command)
+            command?.let { commands.add(it) } // Only add non-null commands
         }
 
         return ZplProgram(commands)
@@ -38,8 +41,9 @@ class ZplParser(private val tokens: List<Token>) {
 
     /**
      * Parse a single ZPL command.
+     * Returns null for commands that should be ignored (like FS field terminators).
      */
-    private fun parseCommand(): ZplNode {
+    private fun parseCommand(): ZplNode? {
         expect(TokenType.CARET)
 
         val commandToken = expect(TokenType.COMMAND)
@@ -47,6 +51,9 @@ class ZplParser(private val tokens: List<Token>) {
         return when (commandToken.value) {
             "XA" -> BasicCommandParsingUtils.parseStartFormatCommand()
             "XZ" -> BasicCommandParsingUtils.parseEndFormatCommand()
+            "FX" -> parseComment()
+            "FO" -> parseFieldOrigin()
+            "FS" -> null // FS is a field terminator, not a command - ignore it
             else -> throw ParseException("Unknown command: ${commandToken.value} at position ${commandToken.position}")
         }
     }
@@ -76,5 +83,63 @@ class ZplParser(private val tokens: List<Token>) {
                     "'${currentToken.value}' at position ${currentToken.position}",
             )
         }
+    }
+
+    /**
+     * Parse FX comment command: ^FXc
+     * Where c is comment text until the next ^ or ~ delimiter.
+     * 
+     * Note: If there's no text between ^FX and the next command delimiter,
+     * the lexer won't produce a STRING token, just the next CARET token.
+     */
+    private fun parseComment(): CommentCommand {
+        // Check if there's a STRING token available (comment text)
+        val commentText = if (current.type == TokenType.STRING) {
+            val stringToken = expect(TokenType.STRING)
+            stringToken.value
+        } else {
+            // Empty comment case - no STRING token produced by lexer
+            // when there's no text between ^FX and next delimiter
+            ""
+        }
+        
+        return CommentCommand(commentText)
+    }
+
+    /**
+     * Parse FS field separator command: ^FS
+     * Simple command with no parameters that marks the end of a field.
+     */
+    private fun parseFieldSeparator(): FieldSeparatorCommand {
+        // FS command has no parameters, just return the singleton object
+        return FieldSeparatorCommand
+    }
+
+    /**
+     * Parse FO field origin command: ^FOx,y,z
+     * Minimal implementation for GREEN phase.
+     */
+    private fun parseFieldOrigin(): FieldOriginCommand {
+        // Expect x coordinate
+        val xToken = expect(TokenType.NUMBER)
+        val x = xToken.value.toInt()
+        
+        // Expect comma
+        expect(TokenType.COMMA)
+        
+        // Expect y coordinate  
+        val yToken = expect(TokenType.NUMBER)
+        val y = yToken.value.toInt()
+        
+        // Optional z coordinate (justification)
+        val z = if (current.type == TokenType.COMMA) {
+            advance() // consume comma
+            val zToken = expect(TokenType.NUMBER)
+            zToken.value.toInt()
+        } else {
+            0 // default value
+        }
+        
+        return FieldOriginCommand(x, y, z)
     }
 }
