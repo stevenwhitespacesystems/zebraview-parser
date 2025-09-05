@@ -12,10 +12,10 @@
       "Bash(kotlinc:*)",
       "Bash(java:*)",
       "Bash(find:*)",
-      "Bash(yq:*)"
+      "Bash(yq:*)",
+      "Bash(echo:*)"
     ],
-    "deny": [],
-    "ask": []
+    "deny": []
   },
   "hooks": {
     "Stop": [
