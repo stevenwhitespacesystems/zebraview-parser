@@ -76,7 +76,16 @@ yq eval '.stages.implementation.tasks.red.status = "active"' -i state.yaml
 9. **Verify RED Phase**
    - Run tests to confirm they fail as expected
 
-10. **Complete RED Phase**
+10. **Output All Test Files and Cases Created**
+    - Read `.stages.implementation.tasks.red.output[0]` → Store as OUTPUT
+    - Write all test files and cases created to OUTPUT
+
+Output Format
+```markdown
+- `src/test/kotlin/com/whitespacesystems/parser/parser/EndFormatCommandTest.kt::"should parse XZ end format command"`
+```
+
+11. **Complete RED Phase**
     - Get current UTC ISO timestamp → Store as END_TIME
     - Read `.stages.implementation.tasks.red.start` → Store as START_TIME
     - Calculate elapsed time: END_TIME - START_TIME → Store as ELAPSED

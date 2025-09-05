@@ -65,14 +65,7 @@ yq eval '.stages.planner.status = "started"' -i state.yaml
 
 9. Take the 10/10 recommendations and then amend to give it a 10/10
 
-10. Generate tasks.md
-   - Use these markdown files here to help generate the task breakdown:
-     - Reference: PRP_PATH
-     - Template: TASKS_PATH
-   - Make sure to ultrathink all the time until you save the markdown file.
-   - Save output to TASKS_PATH
-
-11. Update STATE with status updates
+10. Update STATE with status updates
   - Get current UTC ISO timestamp → Store as CURRENT_TIME
   - Update `.stages.planning.status` to "complete"
   - Update `.stages.planning.end` to CURRENT_TIME
@@ -89,11 +82,6 @@ Transform research findings into PRP template sections:
 - **Section 4**: Implementation Analysis → Implementation Design  
 - **Section 5**: Test Scenarios → Test Scenarios
 - **Section 6**: Definition of Done with completion criteria
-
-### TASKS.md Generation
-IGNORE: Transform prp at PRP_PATH into task.md using the TASK_PATH template
-- **Meta Data**:
-  - Set [FEATURE_NAME] to the current FEATURE_NAME
 
 ## Token Optimization Guidelines
 

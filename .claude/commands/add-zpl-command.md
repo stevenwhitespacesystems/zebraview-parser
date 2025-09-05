@@ -78,7 +78,6 @@ stages:
        - features/templates/zpl-command-tasks.md
     output:
        - features/{FEATURE_NAME}/stages/planning/zpl-command-prp.md
-       - features/{FEATURE_NAME}/stages/planning/zpl-command-tasks.md
   implementation:
      status: inactive
      start: null
@@ -94,6 +93,8 @@ stages:
           end: null
           elapsed: null
           error: null
+          output:
+             - features/{FEATURE_NAME}/stages/implementation/red/tests-created.md
        green:
           status: inactive
           start: null
@@ -132,6 +133,8 @@ stages:
 1. Call the red phase TDD agent
    - Agent: @kotlin-tdd-red-phase
    - $ARGUMENTS: {FEATURE_NAME}
+
+2. END IMPLEMENTATION FLOW
 
 ### Completion
 
