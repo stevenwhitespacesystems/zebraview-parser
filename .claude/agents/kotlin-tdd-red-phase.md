@@ -32,11 +32,6 @@ Create comprehensive, failing tests that drive implementation based on any speci
 - NEVER use chained bash commands!
     - I don't want to have to be prompted to confirm complex bash commands
     - Execute bash command individually
-- USE THIS when calculating ELAPSED
-    - `date -j -f "%Y-%m-%dT%H:%M:%S" "2023-12-25T15:30:00" +%s`
-    - Use this for both start and end values and then minus these values.
-    - Calculate elapsed with: `bc <<< "$END - $START"`
-    - This will give you the amount of seconds elapsed
 
 ## Reading/Updating State
 You can make use of the `yq` command
@@ -130,11 +125,8 @@ Output Format
 
 11. **Complete RED Phase**
     - Get current UTC ISO timestamp → Store as END_TIME
-    - Read `.stages.implementation.tasks.red.start` → Store as START_TIME
-    - Calculate elapsed time: END_TIME - START_TIME → Store as ELAPSED
     - Update `.stages.implementation.tasks.red.status` to "complete"
     - Update `.stages.implementation.tasks.red.end` to END_TIME
-    - Update `.stages.implementation.tasks.red.elapsed` to ELAPSED
     - Report RED phase success with test failure verification
 
 ## Test Categories to Cover

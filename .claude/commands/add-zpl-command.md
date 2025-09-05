@@ -7,18 +7,13 @@ Implement a new ZPL command: $ARGUMENTS
 - NEVER use chained bash commands!
    - I don't want to have to be prompted to confirm complex bash commands
    - Execute bash command individually
-- USE THIS when calculating ELAPSED
-   - `date -j -f "%Y-%m-%dT%H:%M:%S" "2023-12-25T15:30:00" +%s`
-   - Use this for both start and end values and then minus these values.
-   - Calculate elapsed with: `bc <<< "$END - $START"`
-   - This will give you the amount of seconds elapsed
 
 ## Reading/Updating State
 You can make use of the `yq` command
 
 Example:
 ```shell
-yq eval '.stages.planner.status = "started"' -i state.yaml
+yq eval '.stages.planner.status = "active"' -i state.yaml
 ```
 
 ## Workflow
@@ -37,7 +32,6 @@ yq eval '.stages.planner.status = "started"' -i state.yaml
    - Add 1 to this count → Store as NEXT_NUMBER
    - Pad with zeros to 4 digits → Store as FEATURE_ID
    - Example: 3 becomes 0003, 10 becomes 0010
-   - Usage: `bc <<< "Count + 1"`
 
 3. Generate feature name
    - Convert COMMAND to lowercase
@@ -66,13 +60,11 @@ status: active
 phase: null
 start: {CURRENT_TIME}
 end: null
-elapsed: null
 stages:
   research:
     status: inactive
     start: null
     end: null
-    elapsed: null
     error: null
     output:
        - features/{FEATURE_NAME}/stages/research/results.md
@@ -80,7 +72,6 @@ stages:
     status: inactive
     start: null
     end: null
-    elapsed: null
     error: null
     templates:
        - features/templates/zpl-command-prp.md
@@ -90,7 +81,6 @@ stages:
      status: inactive
      start: null
      end: null
-     elapsed: null
      error: null
      references:
         prp: features/{FEATURE_NAME}/stages/planning/zpl-command-prp.md
@@ -99,7 +89,6 @@ stages:
           status: inactive
           start: null
           end: null
-          elapsed: null
           error: null
           output:
              - features/{FEATURE_NAME}/stages/implementation/red/tests-created.md
@@ -107,7 +96,6 @@ stages:
           status: inactive
           start: null
           end: null
-          elapsed: null
           error: null
        refactor: null
 ```

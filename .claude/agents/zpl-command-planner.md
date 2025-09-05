@@ -12,18 +12,13 @@ Create Product Requirement Prompt (PRP) that details the feature and what we nee
 - NEVER use chained bash commands!
     - I don't want to have to be prompted to confirm complex bash commands
     - Execute bash command individually
-- USE THIS when calculating ELAPSED
-    - `date -j -f "%Y-%m-%dT%H:%M:%S" "2023-12-25T15:30:00" +%s`
-    - Use this for both start and end values and then minus these values.
-    - Calculate elapsed with: `bc <<< "$END - $START"`
-    - This will give you the amount of seconds elapsed
 
 ## Reading/Updating State
 You can make use of the `yq` command
 
 Example:
 ```shell
-yq eval '.stages.planner.status = "started"' -i state.yaml
+yq eval '.stages.planner.status = "active"' -i state.yaml
 ```
 
 ## Workflow
@@ -74,9 +69,6 @@ yq eval '.stages.planner.status = "started"' -i state.yaml
   - Get current UTC ISO timestamp → Store as CURRENT_TIME
   - Update `.stages.planning.status` to "complete"
   - Update `.stages.planning.end` to CURRENT_TIME
-  - Read `.stages.planning.start` → Store as START
-  - CURRENT_TIME - START → Store as ELAPSED
-  - Update `.stages.planning.elapsed` to CURRENT_TIME
 
 ## Content Mapping
 
