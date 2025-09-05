@@ -1,4 +1,4 @@
-# PRP Template
+# ZPL Command PRP Template
 
 ## Quick Example: ^FO Command
 <!-- EXAMPLE - Shows agents exactly what to produce -->

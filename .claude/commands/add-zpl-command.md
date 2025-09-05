@@ -2,6 +2,20 @@
 
 Implement a new ZPL command: $ARGUMENTS
 
+## Requirements
+
+- NEVER use chained bash commands!
+   - I don't want to have to be prompted to confirm complex bash commands
+   - Execute bash command individually
+
+## Reading/Updating State
+You can make use of the `yq` command
+
+Example:
+```shell
+yq eval '.stages.planner.status = "started"' -i state.yaml
+```
+
 ## Workflow
 ### Setup Feature Folder Structure
 
@@ -44,7 +58,6 @@ phase: null
 start: {CURRENT_TIME}
 end: null
 elapsed: null
-
 stages:
   research:
     status: inactive
@@ -61,11 +74,33 @@ stages:
     elapsed: null
     error: null
     templates:
-       - features/templates/prp.md
-       - features/templates/tasks.md
+       - features/templates/zpl-command-prp.md
+       - features/templates/zpl-command-tasks.md
     output:
-       - features/{FEATURE_NAME}/stages/planning/prp.md
-       - features/{FEATURE_NAME}/stages/planning/tasks.md
+       - features/{FEATURE_NAME}/stages/planning/zpl-command-prp.md
+       - features/{FEATURE_NAME}/stages/planning/zpl-command-tasks.md
+  implementation:
+     status: inactive
+     start: null
+     end: null
+     elapsed: null
+     error: null
+     references:
+        prp: features/{FEATURE_NAME}/stages/planning/zpl-command-prp.md
+     tasks:
+       red:
+          status: inactive
+          start: null
+          end: null
+          elapsed: null
+          error: null
+       green:
+          status: inactive
+          start: null
+          end: null
+          elapsed: null
+          error: null
+       refactor: null
 ```
 
 ### Automatically call the Researcher
@@ -78,6 +113,24 @@ stages:
 
 1. Call the planner agent
    - Agent: @zpl-command-planner
+   - $ARGUMENTS: {FEATURE_NAME}
+
+### Setup Implementation Flow
+
+1. Validate that the planner phase complete
+   - `.stages.planning.status` → Store as PLANNING_STATE
+   - If PLANNING_STATE != "complete", then don't continue, report to user and halt session
+
+2. Update STATE with status updates
+   - Get current UTC ISO timestamp → Store as CURRENT_TIME
+   - Update `.phase` to "implementation"
+   - Update `.stages.implementation.status` to "active"
+   - Update `.stages.implementation.start` to CURRENT_TIME
+
+### Start Implementation Flow
+
+1. Call the red phase TDD agent
+   - Agent: @kotlin-tdd-red-phase
    - $ARGUMENTS: {FEATURE_NAME}
 
 ### Completion

@@ -7,6 +7,20 @@ color: cyan
 
 Research ZPL commands for parser implementation.
 
+## Requirements
+
+- NEVER use chained bash commands!
+  - I don't want to have to be prompted to confirm complex bash commands
+  - Execute bash command individually
+
+## Reading/Updating State
+You can make use of the `yq` command
+
+Example:
+```shell
+yq eval '.stages.planner.status = "started"' -i state.yaml
+```
+
 ## Workflow
 
 ### 1. Initialize

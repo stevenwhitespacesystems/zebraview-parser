@@ -1,13 +1,19 @@
 ---
 name: zpl-command-planner
-description: Use this agent when you need to create PRP (Product Requirement Prompt) and TASKS files for a feature. This agent generates both the feature specification (PRP.md) and agent workflow (TASKS.md) files. This agent should be invoked when: a new feature is being planned and requires PRP documentation and task workflow, an existing feature needs its documentation created or updated, or when explicitly asked to generate PRP and task documentation for a specific feature. Examples:\n\n<example>\nContext: The user needs to create a PRP document and task workflow for a new authentication feature.\nuser: "Create a PRP for the authentication feature"\nassistant: "I'll use the prp-generator agent to create both the prp.md and tasks.md files for the authentication feature."\n<commentary>\nSince the user is requesting PRP documentation creation, use the Task tool to launch the prp-generator agent which now creates both files.\n</commentary>\n</example>\n\n<example>\nContext: The user is working on a new payment processing feature and needs documentation.\nuser: "Generate the PRP file for the payment-processing feature"\nassistant: "Let me use the prp-generator agent to create both prp.md and tasks.md files in the correct location."\n<commentary>\nThe user explicitly needs PRP generation, and the prp-generator agent creates both the feature spec and workflow files.\n</commentary>\n</example>
+description: Use this agent when you need to create PRP (Product Requirement Prompt) and TASKS files for a feature. This agent generates both the feature specification (PRP.md) and agent workflow (TASKS.md) files. This agent should be invoked when: a new feature is being planned and requires PRP documentation and task workflow, an existing feature needs its documentation created or updated, or when explicitly asked to generate PRP and task documentation for a specific feature. Examples:\n\n<example>\nContext: The user needs to create a PRP document and task workflow for a new authentication feature.\nuser: "Create a PRP for the authentication feature"\nassistant: "I'll use the prp-generator agent to create both the zpl-command-prp.md and zpl-command-tasks.md files for the authentication feature."\n<commentary>\nSince the user is requesting PRP documentation creation, use the Task tool to launch the prp-generator agent which now creates both files.\n</commentary>\n</example>\n\n<example>\nContext: The user is working on a new payment processing feature and needs documentation.\nuser: "Generate the PRP file for the payment-processing feature"\nassistant: "Let me use the prp-generator agent to create both zpl-command-prp.md and zpl-command-tasks.md files in the correct location."\n<commentary>\nThe user explicitly needs PRP generation, and the prp-generator agent creates both the feature spec and workflow files.\n</commentary>\n</example>
 model: opus
 color: purple
 ---
 
 Create Product Requirement Prompt (PRP) that details the feature and what we need to do to deliver it.
 
-## Updating State
+## Requirements
+
+- NEVER use chained bash commands!
+    - I don't want to have to be prompted to confirm complex bash commands
+    - Execute bash command individually
+
+## Reading/Updating State
 You can make use of the `yq` command
 
 Example:
@@ -59,7 +65,7 @@ yq eval '.stages.planner.status = "started"' -i state.yaml
 
 9. Take the 10/10 recommendations and then amend to give it a 10/10
 
-10. IGNORE: Generate tasks.md
+10. Generate tasks.md
    - Use these markdown files here to help generate the task breakdown:
      - Reference: PRP_PATH
      - Template: TASKS_PATH
@@ -85,7 +91,9 @@ Transform research findings into PRP template sections:
 - **Section 6**: Definition of Done with completion criteria
 
 ### TASKS.md Generation
-IGNORE
+IGNORE: Transform prp at PRP_PATH into task.md using the TASK_PATH template
+- **Meta Data**:
+  - Set [FEATURE_NAME] to the current FEATURE_NAME
 
 ## Token Optimization Guidelines
 
