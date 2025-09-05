@@ -92,12 +92,14 @@ stages:
           end: null
           error: null
           output:
-             - features/{FEATURE_NAME}/stages/implementation/red/tests-created.md
+             - features/{FEATURE_NAME}/stages/implementation/red/tests.md
        green:
           status: inactive
           start: null
           end: null
           error: null
+          output:
+             - features/{FEATURE_NAME}/stages/implementation/green/summary.md
        refactor: null
 ```
 
@@ -132,7 +134,11 @@ stages:
    - Agent: @kotlin-tdd-red-phase
    - $ARGUMENTS: {FEATURE_NAME}
 
-2. END IMPLEMENTATION FLOW
+2. Call the green phase TDD agent
+   - Agent: @kotlin-tdd-green-phase
+   - $ARGUMENTS: {FEATURE_NAME}
+
+3. END IMPLEMENTATION FLOW
 
 ### Completion
 
