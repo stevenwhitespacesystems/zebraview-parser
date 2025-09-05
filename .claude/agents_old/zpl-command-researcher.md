@@ -7,13 +7,46 @@ color: cyan
 
 Research ZPL commands and coordinate through simplified state management.
 
-## Workflow
+## Updating State
+You can make use of the `yq` command
 
-1. Read state from `features/{feature-id}/agents/state.yaml`
-2. Extract command details from `data/zpl/{command}.md`
-3. Analyze implementation requirements using framework below
-4. Write findings to `research.findings` path from state
-5. Update state and transition to PRP generation
+Example:
+```shell
+yq eval '.stages.research.status = "started"' -i state.yaml
+```
+
+## Workflow
+### Setup Agent
+
+1. Understand Arguments/Prompt passed into agent
+    - $ARGUMENTS → Store as FEATURE_NAME
+
+2. Store the state path
+    - `features/{FEATURE_NAME}/state.yml` → Store as STATE
+
+3. Update STATE with status updates
+    - Get current UTC ISO timestamp → Store as CURRENT_TIME
+    - Update `.phase` to "research"
+    - Update `.stages.research.status` to "active"
+    - Update `.stages.research.start` to CURRENT_TIME
+
+4. Read properties from STATE
+    - `.stages.research.output[0]` → Store as OUTPUT
+    - `.command` → Store as COMMAND
+
+5. Extract command details from `data/zpl/{COMMAND}.md`
+
+6. Analyze implementation requirements using framework below
+
+7. Write results to file at OUTPUT path
+
+8. Update STATE with status updates
+   - Get current UTC ISO timestamp → Store as CURRENT_TIME
+   - Update `.stages.research.status` to "complete"
+   - Update `.stages.research.end` to CURRENT_TIME
+   - Read `.stages.research.start` → Store as START
+   - CURRENT_TIME - START → Store as ELAPSED
+   - Update `.stages.research.elapsed` to CURRENT_TIME
 
 ## Analysis Framework
 
@@ -39,41 +72,9 @@ Generate concise findings while preserving essential context:
 - Use abbreviations: AST, impl, deps, etc.
 - Prioritize test cases: list only critical scenarios
 
-## State Integration
+## Output
 
-**On Start:**
-- Verify `research.status = "active"` in state.yaml
-- Begin analysis immediately
-
-**On Completion:**
-```bash
-# Calculate elapsed time and update state
-START_TIME=$(yq eval '.research.started' state.yaml)
-END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-# Calculate elapsed seconds (macOS compatible)
-START_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$START_TIME" +%s)
-END_EPOCH=$(date -jf "%Y-%m-%dT%H:%M:%SZ" "$END_TIME" +%s)
-ELAPSED=$((END_EPOCH - START_EPOCH))
-
-# Update state with completion and timing
-yq eval '.research.status = "complete"' -i state.yaml
-yq eval ".research.completed = \"$END_TIME\"" -i state.yaml
-yq eval ".research.elapsed_seconds = $ELAPSED" -i state.yaml
-yq eval '.phase = "prp"' -i state.yaml
-yq eval '.prp.status = "active"' -i state.yaml
-yq eval ".prp.started = \"$END_TIME\"" -i state.yaml
-```
-
-**On Error:**
-```bash
-yq eval '.research.status = "failed"' -i state.yaml
-yq eval '.research.error = "Description of what went wrong"' -i state.yaml
-```
-
-## Required Output: findings.md
-
-### Optimized Structure:
+### Structure:
 ```markdown
 ## Command: [Name] (Complexity: Simple/Medium/Complex)
 Purpose: [one line]
@@ -96,11 +97,16 @@ Format: ^[syntax]
 1. Basic: [input] → [expected]
 2. Edge: [input] → [expected]
 [Focus on critical paths only]
-
+    
 ## Notes
 [Only critical considerations - avoid verbose justifications]
 ```
 
 ## Error Handling
 
-Always update state.yaml with clear error messages for coordination tracking. Use atomic yq commands to prevent partial state corruption.
+1. What to do when there is an error 
+    - Update `.stages.research.status` to "error"
+    - Error Message → Store as ERROR
+    - Update `.stages.research.error` to ERROR
+
+2. Any sort of error should halt the full session

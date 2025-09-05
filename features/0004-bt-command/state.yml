@@ -1,0 +1,28 @@
+feature: 0004-bt-command
+command: BT
+status: active
+phase: planning
+start: 2025-09-05T08:55:14Z
+end: null
+elapsed: null
+stages:
+  research:
+    status: complete
+    start: 2025-09-05T08:55:45Z
+    end: 2025-09-05T08:57:34Z
+    elapsed: 109
+    error: null
+    output:
+      - features/0004-bt-command/stages/research/results.md
+  planning:
+    status: complete
+    start: "2025-09-05T08:58:09Z"
+    end: "2025-09-05T09:00:33Z"
+    elapsed: 144
+    error: null
+    templates:
+      - features/templates/prp.md
+      - features/templates/tasks.md
+    output:
+      - features/0004-bt-command/stages/planning/prp.md
+      - features/0004-bt-command/stages/planning/tasks.md
