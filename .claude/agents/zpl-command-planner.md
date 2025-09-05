@@ -36,6 +36,7 @@ yq eval '.stages.planner.status = "active"' -i state.yaml
 
 4. Update STATE with status updates
   - Get current UTC ISO timestamp → Store as CURRENT_TIME
+    - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
   - Update `.phase` to "planning"
   - Update `.stages.planning.status` to "active"
   - Update `.stages.planning.start` to CURRENT_TIME
@@ -67,6 +68,7 @@ yq eval '.stages.planner.status = "active"' -i state.yaml
 
 10. Update STATE with status updates
   - Get current UTC ISO timestamp → Store as CURRENT_TIME
+    - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
   - Update `.stages.planning.status` to "complete"
   - Update `.stages.planning.end` to CURRENT_TIME
 
@@ -100,6 +102,8 @@ All output should align with their corresponding template files.
 
 1. What to do when there is an error
     - Update `.stages.planning.status` to "error"
+    - Set `.stages.planning.end` to current timestamp
+      - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
     - Error Message → Store as ERROR
     - Update `.stages.research.error` to ERROR
 

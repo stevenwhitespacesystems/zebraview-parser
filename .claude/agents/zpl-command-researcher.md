@@ -29,6 +29,7 @@ yq eval '.stages.planner.status = "active"' -i state.yaml
 - Read COMMAND value from state's `.command` field
 - Read OUTPUT path from state's `.stages.research.output[0]`
 - Get current UTC ISO timestamp
+  - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Update state:
   - Set `.phase` to "research"
   - Set `.stages.research.status` to "active"  
@@ -78,7 +79,7 @@ Format: ^{syntax pattern}
 
 ### 4. Complete
 - Get current UTC ISO timestamp
-- Calculate elapsed time from start
+  - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Update state:
   - Set `.stages.research.status` to "complete"
   - Set `.stages.research.end` to current timestamp
@@ -87,6 +88,8 @@ Format: ^{syntax pattern}
 If error occurs at any step:
 - Set `.stages.research.status` to "error"
 - Set `.stages.research.error` to error message
+- Set `.stages.research.end` to current timestamp
+  - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Stop execution
 
 ## Decision Framework

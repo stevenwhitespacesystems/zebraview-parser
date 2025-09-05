@@ -51,6 +51,7 @@ yq eval '.stages.implementation.tasks.red.status = "active"' -i state.yaml
 
 2. **Update State**
    - Get current UTC ISO timestamp → Store as CURRENT_TIME
+     - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
    - Update `.stages.implementation.tasks.red.status` to "active"
    - Update `.stages.implementation.tasks.red.start` to CURRENT_TIME
 
@@ -125,6 +126,7 @@ Output Format
 
 11. **Complete RED Phase**
     - Get current UTC ISO timestamp → Store as END_TIME
+      - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
     - Update `.stages.implementation.tasks.red.status` to "complete"
     - Update `.stages.implementation.tasks.red.end` to END_TIME
     - Report RED phase success with test failure verification
@@ -178,6 +180,7 @@ If error occurs at any step:
 - Set `.stages.implementation.tasks.red.error` to error message
 - Get current UTC ISO timestamp
 - Set `.stages.implementation.tasks.red.end` to current timestamp
+  - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Stop execution
 
 Execute the specification-based test creation request, ensuring comprehensive coverage and proper RED phase validation.

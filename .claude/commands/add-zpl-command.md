@@ -51,6 +51,7 @@ yq eval '.stages.planner.status = "active"' -i state.yaml
 ### Setup Feature State
 
 1. Get current UTC ISO timestamp → Store as CURRENT_TIME
+   - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 
 2. Create state.yml at `features/{FEATURE_NAME}/state.yml` with content:
 ```yaml
@@ -120,6 +121,7 @@ stages:
 
 2. Update STATE with status updates
    - Get current UTC ISO timestamp → Store as CURRENT_TIME
+     - USE: `date -u +"%Y-%m-%dT%H:%M:%SZ"`
    - Update `.phase` to "implementation"
    - Update `.stages.implementation.status` to "active"
    - Update `.stages.implementation.start` to CURRENT_TIME
