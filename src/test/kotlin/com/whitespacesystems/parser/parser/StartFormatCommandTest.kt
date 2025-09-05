@@ -39,7 +39,7 @@ class StartFormatCommandTest : StringSpec({
     }
 
     "should parse XA in sequence with other commands" {
-        val lexer = Lexer("^XA^FO100,50")
+        val lexer = Lexer("^XA^XZ")
         val parser = ZplParser(lexer.tokenize())
         val program = parser.parse()
 

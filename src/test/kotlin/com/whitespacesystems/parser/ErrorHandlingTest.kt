@@ -33,8 +33,8 @@ class ErrorHandlingTest : StringSpec({
         exception.message shouldBe "Unknown command: XY at position 1"
     }
 
-    "should throw ParseException for missing number in FO command" {
-        val lexer = Lexer("^FO,50")
+    "should throw ParseException for unsupported command" {
+        val lexer = Lexer("^FO100,50")
         val parser = ZplParser(lexer.tokenize())
 
         val exception =
@@ -42,6 +42,6 @@ class ErrorHandlingTest : StringSpec({
                 parser.parse()
             }
 
-        exception.message shouldBe "Expected NUMBER but found COMMA at position 3"
+        exception.message shouldBe "Unknown command: FO at position 1"
     }
 })

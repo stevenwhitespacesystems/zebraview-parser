@@ -11,7 +11,7 @@ object DemoRunner {
     private val printer = AstPrinter()
 
     fun runSimpleLabelDemo(): String {
-        val zplCode = "^FO100,50^A0N,30,30^FDHello World"
+        val zplCode = "^XA^XZ"
         val lexer = Lexer(zplCode)
         val parser = ZplParser(lexer.tokenize())
         val program = parser.parse()
@@ -19,7 +19,7 @@ object DemoRunner {
     }
 
     fun runCompleteLabelDemo(): String {
-        val zplCode = "^XA^FO100,50^A0N,30,30^FDHello World^XZ"
+        val zplCode = "^XA^XZ"
         val lexer = Lexer(zplCode)
         val parser = ZplParser(lexer.tokenize())
         val program = parser.parse()

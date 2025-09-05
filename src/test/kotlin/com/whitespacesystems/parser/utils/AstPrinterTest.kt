@@ -1,8 +1,7 @@
 package com.whitespacesystems.parser.utils
 
-import com.whitespacesystems.parser.ast.FieldDataCommand
-import com.whitespacesystems.parser.ast.FieldOriginCommand
-import com.whitespacesystems.parser.ast.FontCommand
+import com.whitespacesystems.parser.ast.EndFormatCommand
+import com.whitespacesystems.parser.ast.StartFormatCommand
 import com.whitespacesystems.parser.ast.ZplProgram
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.string.shouldContain
@@ -10,55 +9,32 @@ import io.kotest.matchers.string.shouldContain
 class AstPrinterTest : StringSpec({
     val printer = AstPrinter()
 
-    "should print FieldOriginCommand correctly" {
-        val command = FieldOriginCommand(100, 50)
+    "should print StartFormatCommand correctly" {
+        val command = StartFormatCommand()
         val program = ZplProgram(listOf(command))
         val result = printer.print(program)
-        result shouldContain "FieldOriginCommand(x=100, y=50)"
+        result shouldContain "StartFormatCommand()"
     }
 
-    "should print FieldDataCommand correctly" {
-        val command = FieldDataCommand("Hello World")
+    "should print EndFormatCommand correctly" {
+        val command = EndFormatCommand()
         val program = ZplProgram(listOf(command))
         val result = printer.print(program)
-        result shouldContain "FieldDataCommand(data=\"Hello World\")"
+        result shouldContain "EndFormatCommand()"
     }
 
-    "should escape quotes in FieldDataCommand" {
-        val command = FieldDataCommand("Say \"Hello\"")
-        val program = ZplProgram(listOf(command))
-        val result = printer.print(program)
-        result shouldContain "FieldDataCommand(data=\"Say \\\"Hello\\\"\")"
-    }
-
-    "should print FontCommand with all parameters" {
-        val command = FontCommand('B', 'R', 30, 25)
-        val program = ZplProgram(listOf(command))
-        val result = printer.print(program)
-        result shouldContain "FontCommand(font='B', orientation='R', height=30, width=25)"
-    }
-
-    "should print FontCommand with minimal parameters" {
-        val command = FontCommand('A')
-        val program = ZplProgram(listOf(command))
-        val result = printer.print(program)
-        result shouldContain "FontCommand(font='A')"
-    }
-
-    "should print complete ZplProgram" {
+    "should print complete ZplProgram with XA/XZ" {
         val program =
             ZplProgram(
                 listOf(
-                    FieldOriginCommand(100, 50),
-                    FontCommand('A', 'N', 30, 30),
-                    FieldDataCommand("Hello World"),
+                    StartFormatCommand(),
+                    EndFormatCommand(),
                 ),
             )
         val result = printer.print(program)
 
         result shouldContain "ZplProgram("
-        result shouldContain "FieldOriginCommand(x=100, y=50)"
-        result shouldContain "FontCommand(font='A', orientation='N', height=30, width=30)"
-        result shouldContain "FieldDataCommand(data=\"Hello World\")"
+        result shouldContain "StartFormatCommand()"
+        result shouldContain "EndFormatCommand()"
     }
 })

@@ -46,8 +46,8 @@ fun main() {
     // Success summary
     println("\n" + "=".repeat(PerformanceLimits.BORDER_LENGTH))
     println("✅ All demos completed successfully!")
-    println("✅ Parser supports: ^XA/^XZ (format boundaries), ^FO (positioning), ^FD (text data), ^A (fonts)")
-    println("✅ Handles: complete ZPL II labels, commas in data, empty fields, various font formats")
+    println("✅ Parser supports: ^XA/^XZ (format boundaries)")
+    println("✅ Handles: complete ZPL II labels with start/end format commands")
     println("✅ Built with TDD: RED → GREEN → REFACTOR")
     println("✅ Full test coverage with Kotest")
     println("✅ Code quality with Detekt & Ktlint")
@@ -117,55 +117,35 @@ fun formatTime(nanoseconds: Double): String {
 private fun runDemoSuite() {
     val printer = AstPrinter()
 
-    // Demo 1: Simple label
-    val demo1Output = DemoRunner.runSimpleLabelDemo()
-    println(DemoRunner.formatDemoOutput("Demo 1: Simple Label", "^FO100,50^A0N,30,30^FDHello World", demo1Output))
+    // Demo 1: Simple XA/XZ
+    val demo1Zpl = "^XA^XZ"
+    val demo1Lexer = Lexer(demo1Zpl)
+    val demo1Program = ZplParser(demo1Lexer.tokenize()).parse()
+    println(DemoRunner.formatDemoOutput("Demo 1: Simple XA/XZ Label", demo1Zpl, printer.print(demo1Program)))
 
-    // Demo 2: Price label with special characters
-    val demo2Zpl = "^FO10,10^ABN,25^FDPrice: \$29.99^FO10,40^ABN,20^FD(50% OFF!)"
+    // Demo 2: Single XA command
+    val demo2Zpl = "^XA"
     val demo2Lexer = Lexer(demo2Zpl)
     val demo2Program = ZplParser(demo2Lexer.tokenize()).parse()
-    println(
-        DemoRunner.formatDemoOutput(
-            "Demo 2: Price Label with Special Characters",
-            demo2Zpl,
-            printer.print(demo2Program),
-        ),
-    )
+    println(DemoRunner.formatDemoOutput("Demo 2: Start Format Command Only", demo2Zpl, printer.print(demo2Program)))
 
-    // Demo 3: Font variations
-    val demo3Zpl = "^FO0,0^A^FDDefault^FO0,30^A0^FDScalable^FO0,60^ABR,20^FDRotated"
+    // Demo 3: Single XZ command
+    val demo3Zpl = "^XZ"
     val demo3Lexer = Lexer(demo3Zpl)
     val demo3Program = ZplParser(demo3Lexer.tokenize()).parse()
-    println(DemoRunner.formatDemoOutput("Demo 3: Different Font Variations", demo3Zpl, printer.print(demo3Program)))
+    println(DemoRunner.formatDemoOutput("Demo 3: End Format Command Only", demo3Zpl, printer.print(demo3Program)))
 
-    // Demo 4: Complete ZPL label with boundaries
-    val demo4Output = DemoRunner.runCompleteLabelDemo()
-    println(
-        DemoRunner.formatDemoOutput(
-            "Demo 4: Complete ZPL Label with ^XA/^XZ Format Commands",
-            "^XA^FO100,50^A0N,30^FDComplete Label^XZ",
-            demo4Output,
-        ),
-    )
+    // Demo 4: Multiple labels
+    val demo4Zpl = "^XA^XZ^XA^XZ"
+    val demo4Lexer = Lexer(demo4Zpl)
+    val demo4Program = ZplParser(demo4Lexer.tokenize()).parse()
+    println(DemoRunner.formatDemoOutput("Demo 4: Multiple Complete ZPL Labels", demo4Zpl, printer.print(demo4Program)))
 
-    // Demo 5: Product label
-    val demo5Zpl = "^XA^FO300,30^A0N,30^FDProduct Label^FO20,100^A0N,25^FDSKU: 123456^XZ"
+    // Demo 5: XA/XZ with whitespace
+    val demo5Zpl = " ^XA ^XZ "
     val demo5Lexer = Lexer(demo5Zpl)
     val demo5Program = ZplParser(demo5Lexer.tokenize()).parse()
-    println(
-        DemoRunner.formatDemoOutput(
-            "Demo 5: Real-World Product Label with Format Boundaries",
-            demo5Zpl,
-            printer.print(demo5Program),
-        ),
-    )
-
-    // Demo 6: Multiple labels
-    val demo6Zpl = "^XA^FO10,10^FDFirst Label^XZ^XA^FO20,20^FDSecond Label^XZ"
-    val demo6Lexer = Lexer(demo6Zpl)
-    val demo6Program = ZplParser(demo6Lexer.tokenize()).parse()
-    println(DemoRunner.formatDemoOutput("Demo 6: Multiple Complete ZPL Labels", demo6Zpl, printer.print(demo6Program)))
+    println(DemoRunner.formatDemoOutput("Demo 5: XA/XZ with Whitespace", demo5Zpl, printer.print(demo5Program)))
 }
 
 private fun runSimpleCommandDemo() {
@@ -179,8 +159,8 @@ private fun runSimpleCommandDemo() {
 }
 
 private fun runComplexCommandDemo() {
-    println("\n🔧 Complex Commands (Target: <1ms)")
-    val complexCommands = listOf("^FO100,50", "^FDHello World", "^A0N,30,30")
+    println("\n🔧 Complex Sequences (Target: <1ms)")
+    val complexCommands = listOf("^XA^XZ", "^XA^XZ^XA^XZ")
     complexCommands.forEach { command ->
         val avgTime = measureParsingTime(command, iterations = PerformanceLimits.SIMPLE_ITERATIONS)
         val status = if (avgTime < PerformanceLimits.COMPLEX_COMMAND_THRESHOLD_NS) "✅ FAST" else "⚠️ SLOW"
@@ -192,9 +172,9 @@ private fun runLabelParsingDemo() {
     println("\n📋 Complete Label Parsing")
     val testLabels =
         listOf(
-            "^XA^FO100,50^FDHello^XZ",
-            "^XA^FO100,50^A0N,30,30^FDWorld^XZ",
-            "^XA^FO50,50^A0N,28^FDProduct Label^FO50,100^ABN,20^FDPrice: $29.99^XZ",
+            "^XA^XZ",
+            "^XA^XZ^XA^XZ",
+            "^XA^XZ^XA^XZ^XA^XZ",
         )
     testLabels.forEachIndexed { index, label ->
         val avgTime = measureParsingTime(label, iterations = PerformanceLimits.LABEL_ITERATIONS)
@@ -211,7 +191,7 @@ private fun runLabelParsingDemo() {
 private fun runPerformanceComparison() {
     println("\n⚖️ Performance Comparison")
     val baselineTime = PerformanceLimits.BASELINE_TIME_NS
-    val currentTime = measureParsingTime("^FO100,50", iterations = PerformanceLimits.SIMPLE_ITERATIONS)
+    val currentTime = measureParsingTime("^XA^XZ", iterations = PerformanceLimits.SIMPLE_ITERATIONS)
     val deltaPercent = ((currentTime - baselineTime) / baselineTime) * PerformanceLimits.PERCENTAGE_MULTIPLIER
     val comparison = PerformanceReporterUtils.formatPerformanceComparison(deltaPercent)
 
@@ -225,7 +205,7 @@ private fun runMemoryEfficiencyTest() {
     val beforeMemory = Runtime.getRuntime().let { it.totalMemory() - it.freeMemory() }
 
     repeat(PerformanceLimits.MEMORY_TEST_ITERATIONS) {
-        val lexer = Lexer("^XA^FO100,50^A0N,30,30^FDPerformance Test^XZ")
+        val lexer = Lexer("^XA^XZ")
         val program = ZplParser(lexer.tokenize()).parse()
         // Consume result to prevent dead code elimination
         program.commands.size

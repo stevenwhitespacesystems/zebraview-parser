@@ -10,7 +10,7 @@ import java.io.PrintStream
 class MainTest : StringSpec({
 
     "should measure parsing time correctly" {
-        val zplCode = "^XA^FO100,50^FDHello^XZ"
+        val zplCode = "^XA^XZ"
         val avgTime = measureParsingTime(zplCode, iterations = 10)
 
         // Should return positive time measurement
@@ -65,7 +65,7 @@ class MainTest : StringSpec({
             // Verify performance demo components
             output shouldContain "Performance Characteristics"
             output shouldContain "Simple Commands"
-            output shouldContain "Complex Commands"
+            output shouldContain "Complex Sequences"
             output shouldContain "Complete Label Parsing"
             output shouldContain "Performance Comparison"
             output shouldContain "Memory Efficiency"
@@ -76,7 +76,7 @@ class MainTest : StringSpec({
 
     "should handle different parsing iterations" {
         val simpleZpl = "^XA"
-        val complexZpl = "^XA^FO100,50^A0N,30,30^FDTest^XZ"
+        val complexZpl = "^XA^XZ^XA^XZ"
 
         val simpleTime = measureParsingTime(simpleZpl, iterations = 5)
         val complexTime = measureParsingTime(complexZpl, iterations = 5)

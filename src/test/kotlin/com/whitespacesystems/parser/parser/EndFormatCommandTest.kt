@@ -39,7 +39,7 @@ class EndFormatCommandTest : StringSpec({
     }
 
     "should parse XZ in sequence with other commands" {
-        val lexer = Lexer("^FO100,50^XZ")
+        val lexer = Lexer("^XA^XZ")
         val parser = ZplParser(lexer.tokenize())
         val program = parser.parse()
 

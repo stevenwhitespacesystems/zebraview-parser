@@ -7,15 +7,16 @@ class DemoRunnerTest : StringSpec({
 
     "should run simple label demo" {
         val result = DemoRunner.runSimpleLabelDemo()
-        result.shouldContain("FieldOriginCommand")
-        result.shouldContain("FontCommand")
-        result.shouldContain("FieldDataCommand")
+        result.shouldContain("StartFormatCommand")
+        result.shouldContain("EndFormatCommand")
+        result.shouldContain("ZplProgram")
     }
 
     "should run complete label demo" {
         val result = DemoRunner.runCompleteLabelDemo()
         result.shouldContain("ZplProgram")
-        result.shouldContain("Hello World")
+        result.shouldContain("StartFormatCommand")
+        result.shouldContain("EndFormatCommand")
     }
 
     "should run performance command demo" {
@@ -25,10 +26,10 @@ class DemoRunnerTest : StringSpec({
     }
 
     "should format demo output correctly" {
-        val programOutput = "ZplProgram(\n  FieldOriginCommand(x=100, y=50)\n)"
-        val result = DemoRunner.formatDemoOutput("Test Demo", "^FO100,50", programOutput)
+        val programOutput = "ZplProgram(\n  StartFormatCommand()\n  EndFormatCommand()\n)"
+        val result = DemoRunner.formatDemoOutput("Test Demo", "^XA^XZ", programOutput)
         result.shouldContain("Test Demo")
-        result.shouldContain("ZPL: ^FO100,50")
+        result.shouldContain("ZPL: ^XA^XZ")
         result.shouldContain("AST:")
     }
 })
