@@ -12,8 +12,7 @@
       "Bash(kotlinc:*)",
       "Bash(java:*)",
       "Bash(find:*)",
-      "Bash(yq:*)",
-      "Bash(echo:*)"
+      "Bash(yq:*)"
     ],
     "deny": []
   },

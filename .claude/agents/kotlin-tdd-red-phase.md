@@ -35,6 +35,7 @@ Create comprehensive, failing tests that drive implementation based on any speci
 - USE THIS when calculating ELAPSED
     - `date -j -f "%Y-%m-%dT%H:%M:%S" "2023-12-25T15:30:00" +%s`
     - Use this for both start and end values and then minus these values.
+    - Calculate elapsed with: `bc <<< "$END - $START"`
     - This will give you the amount of seconds elapsed
 
 ## Reading/Updating State
