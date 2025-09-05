@@ -7,6 +7,10 @@ Implement a new ZPL command: $ARGUMENTS
 - NEVER use chained bash commands!
    - I don't want to have to be prompted to confirm complex bash commands
    - Execute bash command individually
+- USE THIS when calculating ELAPSED
+   - `date -j -f "%Y-%m-%dT%H:%M:%S" "2023-12-25T15:30:00" +%s`
+   - Use this for both start and end values and then minus these values.
+   - This will give you the amount of seconds elapsed
 
 ## Reading/Updating State
 You can make use of the `yq` command
