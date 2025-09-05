@@ -45,21 +45,6 @@ This is a **ZPL (Zebra Programming Language) II parser** built with Kotlin using
    - `DemoRunner`: Performance testing and examples
    - `BaselineComparison`: Performance regression detection
 
-### Supported ZPL Commands
-
-The parser supports these ZPL II commands:
-- **^XA/^XZ**: Format boundaries (start/end label)
-- **^FO**: Field Origin (positioning)
-- **^FD**: Field Data (text content)
-- **^A**: Font commands (with variants like ^A0N, ^ABN)
-- **^CF**: Change Font
-- **^FX**: Comments
-- **^FR/^FS**: Field Reverse/Separator
-- **^GB**: Graphic Box
-- **^BY**: Barcode Default
-- **^BC**: Code 128 barcode
-- **^BE**: EAN-13 barcode
-
 ### Code Quality Setup
 
 - **Testing**: Kotest framework with property-based testing

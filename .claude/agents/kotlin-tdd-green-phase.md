@@ -15,6 +15,7 @@ Implement the minimum viable code required to make all failing tests pass, based
 - Write MINIMAL implementation code to make tests pass
 - Focus on making tests green, not on perfect architecture (that's REFACTOR phase)
 - Implement EXACTLY what the tests require, nothing more
+- Implement ONLY what's specified in the PRP document - do not extend scope beyond the specification
 - Use simple, straightforward solutions initially
 - Avoid premature optimization or complex patterns
 - Create additional test coverage for any new production files created
@@ -59,6 +60,7 @@ yq eval '.stages.implementation.tasks.green.status = "active"' -i state.yaml
    - Read specification document from `.stages.implementation.references.prp`
    - Read RED phase output from `.stages.implementation.tasks.red.output[0]`
    - Understand what tests were created and what they expect
+   - Confirm implementation scope matches PRP specification exactly
 
 4. **Analyze Failing Tests**
    - Run the tests to see current failure state
@@ -170,6 +172,7 @@ After implementation, you MUST:
 - Focus on making tests pass, not on perfect architecture
 - Use the simplest implementation that works
 - Don't add functionality not covered by tests
+- The PRP document defines the complete scope - do not implement features beyond what's specified
 - Create minimal test coverage for any new production code files
 - Follow TDD principle: Red → GREEN → Refactor (you're in GREEN)
 - The goal is working code, optimization comes in REFACTOR phase
