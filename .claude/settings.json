@@ -9,10 +9,9 @@
       "Bash(tree:*)",
       "WebFetch(domain:github.com)",
       "Bash(grep:*)",
-      "Bash(kotlinc:*)",
-      "Bash(java:*)",
       "Bash(find:*)",
-      "Bash(yq:*)"
+      "Bash(yq:*)",
+      "Bash(bc:*)"
     ],
     "deny": []
   },
